@@ -9,20 +9,21 @@ joint.shapes.ontouml.Generalization = joint.shapes.mcore.MGeneralization.extend(
 });
 
 joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
-	defaults: { 
+	defaults: joint.util.deepSupplement({ 
 		type: 'ontouml.Relationship',		
 		stereotype: []
-	},
+	}, joint.shapes.mcore.MRelationship.prototype.defaults),
 	
 	initialize: function() {
 		joint.shapes.basic.Generic.prototype.initialize.apply(this, arguments);
-		if(this.getStereotypeName().toLowerCase()== 'componentof'){		
-			alert("here")		
-			this.set('.marker-target', { d: 'M 20 8 L 10 0 L 0 8 L 10 16 z', fill: 'black'});
-			
-		}        
+		if(this.getStereotypeName().toLowerCase()== 'componentof' || this.getStereotypeName().toLowerCase()== 'memberof'
+		|| this.getStereotypeName().toLowerCase()== 'subcollectionof' || this.getStereotypeName().toLowerCase()== 'subquantityof'
+		|| this.getStereotypeName().toLowerCase()== 'subeventof' || this.getStereotypeName().toLowerCase()== 'constitution'
+		|| this.getStereotypeName().toLowerCase()== 'quapartof'){					
+			this.attr('.marker-source', { d: 'M 20 8 L 10 0 L 0 8 L 10 16 z', fill: 'white'});			
+		}
     },
-		 
+	
 	getStereotype: function() {
         return "\u00AB"+this.get('stereotype')+"\u00BB";
     },

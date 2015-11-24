@@ -1,33 +1,118 @@
 joint.shapes.mcore = {};
 
+/** MCanvas */
 joint.shapes.mcore.MCanvas = joint.dia.Paper.extend({
 	defaults: {
-		perpendicularLinks: true,
-	},
+		
+	},	
 });
 
-joint.shapes.mcore.MGeneralization = joint.dia.Link.extend({
-	defaults: { 
+/** MGeneralization */
+joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
+	defaults: joint.util.deepSupplement({  
 		type: 'mcore.MGeneralization',
 		attrs: { '.marker-target': { d: 'M 18 0 L 0 10 L 18 18 z', fill: 'white' }}		
-	},
+	}, joint.shapes.uml.Association.prototype.defaults),
 	
 	initialize: function() {
-        joint.shapes.basic.Generic.prototype.initialize.apply(this, arguments);
+        joint.shapes.uml.Generalization.prototype.initialize.apply(this, arguments);
     },
 });
 
-joint.shapes.mcore.MRelationship = joint.dia.Link.extend({
-    defaults: { 
-		type: 'mcore.MRelationship' 
-	},
+/** MRelationship */
+joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
+    defaults: { joint.util.deepSupplement({ 
+		type: 'mcore.MRelationship',
+		labels: [
+			{ position: 0.1, attrs: { rect: { fill: 'white' }, text: { fill: 'black' }}},
+			{ position: 0.9, attrs: { rect: { fill: 'white' }, text: { fill: 'black' }}},
+			{ position: 0.5, attrs: { rect: { fill: 'white' }, text: { fill: 'black' }}}
+		],
+		name: [],
+		sourceCardinality: "1",		
+		targetCardinality: "1..*",		
+		sourceDependency:false,
+		targetDependency:false,
+		sourceOrdered:false,
+		targetOrdered:false,
+		sourceEndName: [],
+		targetEndName: [],
+	}, joint.shapes.uml.Association.prototype.defaults),
 	
 	initialize: function() {
-		//this.set('router', { name: 'orthogonal' });
-        joint.shapes.basic.Generic.prototype.initialize.apply(this, arguments);
-    },
+		alert("Not entering here!");
+		this.set('router', { name: 'orthogonal' });			
+		setSourceOrdered(true);
+        joint.shapes.uml.Association.prototype.initialize.apply(this, arguments);
+    },		
+	
+	setName: function(name){
+		this.name = name
+	}, 
+	
+	getName: function(){
+		return this.name
+	}, 
+	
+	isSourceDependent: function(){
+		return this.sourceDependency
+	}, 
+	
+	isTargetDependent: function(){
+		return this.targetDependency
+	}, 
+	
+	isSourceOrdered: function(){
+		return this.sourceOrdered
+	}, 
+	
+	isTargetOrdered: function(){
+		return this.targetOrdered
+	}, 
+	
+	setSourceOrdered: function(value){
+		this.ordered = value
+		if(value){
+			var array = this.get('labels');
+			array[0].text = this.sourceCardinality + " \n{ordered}";
+		}else{
+			array[0].text = this.sourceCardinality;
+		}
+	},
+	
+	setSourceDependent: function(value){
+		this.dependency = value
+		if(value){
+			var array = this.get('labels');
+			array[0].text = this.sourceCardinality + " \n{dependent}";
+		}else{
+			array[0].text = this.sourceCardinality;
+		}
+	},
+	
+	setTargetDependent: function(value){
+		this.dependency = value
+		if(value){
+			var array = this.get('labels');
+			array[1].text = this.targetCardinality + " \n{dependent}";
+		}else{
+			array[1].text = this.targetCardinality;
+		}
+	},
+	
+	setTargetOrdered: function(value){
+		this.ordered = value
+		if(value){
+			var array = this.get('labels');
+			array[1].text = this.targetCardinality + " \n{ordered}";
+		}else{
+			array[1].text = this.targetCardinality;
+		}
+	},
+		
 });
 
+/** MClass */
 joint.shapes.mcore.MClass = joint.shapes.uml.Class.extend({
 
     defaults: joint.util.deepSupplement({

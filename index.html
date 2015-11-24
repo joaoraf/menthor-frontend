@@ -14,7 +14,9 @@
 	<script src="menthor-core/ontouml.js"></script>
 	
 	<!-- Joint Rapid API -->
-	
+	<link rel="stylesheet" type="text/css" href="joint-rapid/css/joint.ui.freeTransform.css" />
+	<script src="joint-rapid/js/joint.dia.freeTransform.js"></script>
+	<script src="joint-rapid/js/joint.ui.freeTransform.js"></script>
 	
 </head>
 <body>
@@ -33,30 +35,39 @@
         model: graph
     });
 
+	//paper.on('cell:pointerup', function(cellView) {
+	//	if(cellView.model instanceof joint.dia.Link) return;
+	//	if(cellView.model instanceof joint.shapes.uml.Class){
+	//		var freeTransform = new joint.ui.FreeTransform({ cellView: cellView });
+	//		freeTransform.render();
+	//	}
+	//});
+	
     var rect = new joint.shapes.ontouml.Class({	
-        name: 'Person',
-		stereotype:'kind',
+        name: 'Forest',
+		stereotype:'collective',
         attributes: ['name: String'],
-        position: { x: 100, y: 30 }
+        position: { x: 100, y: 130 }
     });
 
 	var rect2 = new joint.shapes.ontouml.Class({	
-        name: 'Person',
+        name: 'Tree',
 		stereotype:'kind',
-        position: { x: 400, y: 30 }
+        position: { x: 400, y: 140 }
     });
 	
 	var rect3 = new joint.shapes.ontouml.Class({	
-        name: 'Organization',       
-        position: { x: 400, y: 70 }
+        name: 'Entity',
+		stereotype: 'category',       
+        position: { x: 380, y: 50 }
     });
 	
     var link = new joint.shapes.ontouml.Relationship({
         source: { id: rect.id },
         target: { id: rect2.id },
-		stereotype: 'componentof'
+		stereotype: 'memberof'
     });
-		
+	
     var link2 = new joint.shapes.ontouml.Generalization({
         source: { id: rect2.id },
         target: { id: rect3.id }
