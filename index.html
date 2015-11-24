@@ -1,14 +1,20 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" href="joint/joint.css" />
-	<script src="joint/jquery.min.js"></script>
-    <script src="joint/lodash.min.js"></script>
-    <script src="joint/backbone-min.js"></script>
-    <script src="joint/joint.js"></script>
-	<script src="joint/joint.shapes.uml.js"></script>	
-	<script src="joint/menthor.mcore.js"></script>
-	<script src="joint/menthor.ontouml.js"></script>
+	<!-- Joint Core API -->
+    <link rel="stylesheet" href="joint-core/joint.css" />
+	<script src="joint-core/jquery.min.js"></script>
+    <script src="joint-core/lodash.min.js"></script>
+    <script src="joint-core/backbone-min.js"></script>
+    <script src="joint-core/joint.js"></script>
+	<script src="joint-core/joint.shapes.uml.js"></script>	
+	
+	<!-- Menthor API -->
+	<script src="menthor-core/mcore.js"></script>
+	<script src="menthor-core/ontouml.js"></script>
+	
+	<!-- Joint Rapid API -->
+	
 	
 </head>
 <body>
@@ -20,12 +26,11 @@
 
     var graph = new joint.dia.Graph;
 
-    var paper = new joint.dia.Paper({
+    var paper = new joint.shapes.ontouml.Canvas({
         el: $('#canvas'),
-        width: 600,
-        height: 200,
-        model: graph,
-        gridSize: 1
+        width: 800,
+        height: 400,
+        model: graph
     });
 
     var rect = new joint.shapes.ontouml.Class({	
@@ -35,18 +40,29 @@
         position: { x: 100, y: 30 }
     });
 
-	var rect2 = new joint.shapes.mcore.MClass({	
+	var rect2 = new joint.shapes.ontouml.Class({	
         name: 'Person',
-        attributes: ['name: String'],
+		stereotype:'kind',
         position: { x: 400, y: 30 }
     });
 	
-    var link = new joint.dia.Link({
-        source: { id: rect.id },
-        target: { id: rect2.id }
+	var rect3 = new joint.shapes.ontouml.Class({	
+        name: 'Organization',       
+        position: { x: 400, y: 70 }
     });
-
-    graph.addCells([rect, rect2, link]);
+	
+    var link = new joint.shapes.ontouml.Relationship({
+        source: { id: rect.id },
+        target: { id: rect2.id },
+		stereotype: 'componentof'
+    });
+		
+    var link2 = new joint.shapes.ontouml.Generalization({
+        source: { id: rect2.id },
+        target: { id: rect3.id }
+    });
+	
+    graph.addCells([rect, rect2, rect3, link, link2]);
 
   </script>
 </body>
