@@ -1,5 +1,5 @@
 joint.shapes.mcore = {};
-
+	
 /** MCanvas */
 joint.shapes.mcore.MCanvas = joint.dia.Paper.extend({
 	defaults: {
@@ -21,99 +21,143 @@ joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
 
 /** MRelationship */
 joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
-    defaults: { joint.util.deepSupplement({ 
+    defaults: joint.util.deepSupplement({ 
 		type: 'mcore.MRelationship',
-		labels: [
-			{ position: 0.1, attrs: { rect: { fill: 'white' }, text: { fill: 'black' }}},
-			{ position: 0.9, attrs: { rect: { fill: 'white' }, text: { fill: 'black' }}},
-			{ position: 0.5, attrs: { rect: { fill: 'white' }, text: { fill: 'black' }}}
-		],
+		labels: [],
 		name: [],
-		sourceCardinality: "1",		
-		targetCardinality: "1..*",		
-		sourceDependency:false,
-		targetDependency:false,
+		sourceMultiplicity: "1",	
+		targetMultiplicity: "1..*",
+		sourceDependent:false,
+		targetDependent:false,
 		sourceOrdered:false,
 		targetOrdered:false,
 		sourceEndName: [],
 		targetEndName: [],
 	}, joint.shapes.uml.Association.prototype.defaults),
 	
-	initialize: function() {
-		alert("Not entering here!");
-		this.set('router', { name: 'orthogonal' });			
-		setSourceOrdered(true);
-        joint.shapes.uml.Association.prototype.initialize.apply(this, arguments);
-    },		
-	
 	setName: function(name){
-		this.name = name
+		this.set('name',name)
 	}, 
 	
 	getName: function(){
-		return this.name
+		return this.get('name')
 	}, 
+	
+	getSourceMultiplicity: function(){
+		return this.get('sourceMultiplicity')
+	},
+	
+	getTargetMultiplicity: function(){
+		return this.get('targetMultiplicity')
+	},
 	
 	isSourceDependent: function(){
-		return this.sourceDependency
+		return this.get('sourceDependent')
 	}, 
+	
+	getSourceDependentLabelName: function(){
+		return "dependent"
+	},
 	
 	isTargetDependent: function(){
-		return this.targetDependency
+		return this.get('targetDependent')
 	}, 
 	
+	getTargetDependentLabelName: function(){
+		return "dependent"
+	},
+		
 	isSourceOrdered: function(){
-		return this.sourceOrdered
+		return this.get('sourceOrdered')
 	}, 
+	
+	getSourceOrderedLabelName: function(){
+		return "ordered"
+	},
 	
 	isTargetOrdered: function(){
-		return this.targetOrdered
+		return this.get('targetOrdered')
 	}, 
 	
-	setSourceOrdered: function(value){
-		this.ordered = value
-		if(value){
-			var array = this.get('labels');
-			array[0].text = this.sourceCardinality + " \n{ordered}";
-		}else{
-			array[0].text = this.sourceCardinality;
+	getTargetOrderedLabelName: function(){
+		return "ordered"
+	},
+	
+	toOrthogonal: function(){
+		this.set('router', { name: 'orthogonal' });			
+	},	
+	
+	toManhatan: function(){
+		this.set('router', { name: 'manhattan' });
+	},
+	
+	toMetro: function(){
+		this.set('router', { name: 'metro' });
+	},
+	
+	getSourceFullLabelName: function(){
+		if(this.getSourceMultiplicity()!=null){
+			if(this.isSourceOrdered() && this.isSourceDependent()){
+				return this.getSourceMultiplicity() + "\n{"+this.getSourceOrderedLabelName()+",\n"+this.getSourceDependentLabelName()+"}";				
+			}else if(this.isSourceOrdered() && !this.isSourceDependent()){
+				return this.getSourceMultiplicity() + "\n{"+this.getSourceOrderedLabelName()+"}"
+			}else if(!this.isSourceOrdered() && this.isSourceDependent()){
+				return this.getSourceMultiplicity() + "\n{"+this.getSourceDependentLabelName()+"}"
+			}else if(!this.isSourceOrdered() && !this.isSourceDependent()){
+				return this.getSourceMultiplicity()
+			}
 		}
 	},
 	
-	setSourceDependent: function(value){
-		this.dependency = value
-		if(value){
-			var array = this.get('labels');
-			array[0].text = this.sourceCardinality + " \n{dependent}";
-		}else{
-			array[0].text = this.sourceCardinality;
-		}
-	},
-	
-	setTargetDependent: function(value){
-		this.dependency = value
-		if(value){
-			var array = this.get('labels');
-			array[1].text = this.targetCardinality + " \n{dependent}";
-		}else{
-			array[1].text = this.targetCardinality;
-		}
-	},
-	
-	setTargetOrdered: function(value){
-		this.ordered = value
-		if(value){
-			var array = this.get('labels');
-			array[1].text = this.targetCardinality + " \n{ordered}";
-		}else{
-			array[1].text = this.targetCardinality;
+	getTargetFullLabelName: function(){
+		if(this.getTargetMultiplicity()!=null){
+			if(this.isTargetOrdered() && this.isTargetDependent()){
+				return this.getTargetMultiplicity() + "\n{"+this.getTargetOrderedLabelName()+",\n"+this.getTargetDependentLabelName()+"}";				
+			}else if(this.isTargetOrdered() && !this.isTargetDependent()){
+				return this.getTargetMultiplicity() + "\n{"+this.getTargetOrderedLabelName()+"}"
+			}else if(!this.isTargetOrdered() && this.isTargetDependent()){
+				return this.getTargetMultiplicity() + "\n{"+this.getTargetDependentLabelName()+"}"
+			}else if(!this.isTargetOrdered() && !this.isTargetDependent()){
+				return this.getTargetMultiplicity()
+			}
 		}
 	},
 		
+	initialize: function() {				
+		joint.shapes.uml.Association.prototype.initialize.apply(this, arguments);	
+		this.on('add change:sourceMultiplicity change:targetMultiplicity change:sourceOrdered change:sourceDependent change:targetDependent change:targetOrdered', 
+		function() { this.updateCornerLabels(); }, this);
+		
+		this.on('add change:name',function() { this.updateNameLabel(); }, this);			
+    },				
+	
+	updateNameLabel: function(){
+		this.label(0, {
+            position: 0.5,
+            attrs: {
+                rect: { fill: '#D3D3D3' }, text: { dy:10, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getName() }
+            },
+        });				
+	},
+	
+	updateCornerLabels: function(){	
+		this.label(1, {
+			position: -15,
+			attrs: {
+				rect: { fill: '#D3D3D3' }, text: { dy:10, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getSourceFullLabelName() }
+			}
+		});	    	
+		this.label(2, {
+			position: 15,
+			attrs: {
+				rect: { fill: '#D3D3D3' }, text: { dy:10, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getTargetFullLabelName() }
+			}
+		});		
+	},
 });
 
-/** MClass */
-joint.shapes.mcore.MClass = joint.shapes.uml.Class.extend({
+/** MType */
+joint.shapes.mcore.MType = joint.shapes.uml.Class.extend({
 
     defaults: joint.util.deepSupplement({
         type: 'mcore.MClass',			
@@ -123,17 +167,20 @@ joint.shapes.mcore.MClass = joint.shapes.uml.Class.extend({
             '.uml-class-name-rect': { 'stroke-width': 2, 'fill': '#FFFFFF' },
 			'.uml-class-attrs-rect': { 'stroke-width': 2, 'fill': '#FFFFFF' }, 		
 			'.uml-class-methods-rect': { 'stroke-width': 2, 'fill': '#FFFFFF' },			
-			'.uml-class-name-text': { 'font-size': 13, 'font-family': 'RobotoDraft, sans-serif;', 'font-weight': 'bold' },
-            '.uml-class-attrs-text': {'font-size': 13, 'font-family': 'RobotoDraft, sans-serif;' },
-            '.uml-class-methods-text': { 'font-size': 13, 'font-family': 'RobotoDraft, sans-serif;' }
+			'.uml-class-name-text': { 'font-size': 13, 'font-family': 'Arial', 'font-weight': 'plain' },
+            '.uml-class-attrs-text': {'font-size': 13, 'font-family': 'Arial' },
+            '.uml-class-methods-text': { 'font-size': 13, 'font-family': 'Arial' }
 		},		
     }, joint.shapes.uml.Class.prototype.defaults),		
 	
+	getFullName: function(){
+		return this.getClassName();
+	},
 	
 	updateRectangles: function() {
         var attrs = this.get('attrs');
         var rects = [
-            { type: 'name', text: this.getClassName() },
+            { type: 'name', text: this.getFullName() },
             { type: 'attrs', text: this.get('attributes') },
             { type: 'methods', text: this.get('methods') }
         ];
@@ -161,4 +208,15 @@ joint.shapes.mcore.MClass = joint.shapes.uml.Class.extend({
 		this.get('size').width = maxWidth;
 		this.get('size').height = offsetY;
     }	
+});
+
+
+/** MClass */
+joint.shapes.mcore.MClass = joint.shapes.mcore.MType.extend({
+	
+});
+
+/** MDataType */
+joint.shapes.mcore.MDataType = joint.shapes.mcore.MType.extend({
+	
 });

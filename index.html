@@ -9,39 +9,33 @@
     <script src="joint-core/joint.js"></script>
 	<script src="joint-core/joint.shapes.uml.js"></script>	
 	
-	<!-- Menthor API -->
-	<script src="menthor-core/mcore.js"></script>
-	<script src="menthor-core/ontouml.js"></script>
-	
 	<!-- Joint Rapid API -->
+	<!--
 	<link rel="stylesheet" type="text/css" href="joint-rapid/css/joint.ui.freeTransform.css" />
 	<script src="joint-rapid/js/joint.dia.freeTransform.js"></script>
 	<script src="joint-rapid/js/joint.ui.freeTransform.js"></script>
+	<link href="joint-rapid/css/joint.ui.stencil.css" rel="stylesheet" type="text/css" />
+	<script src="joint-rapid/js/joint.ui.stencil.js" type="text/javascript" ></script>
+    -->
 	
+	<!-- Menthor API -->
+	<script src="menthor-core/mcore.js"></script>
+	<script src="menthor-core/ontouml.js"></script>
+		
 </head>
 <body>
-  <div id="canvas">
-  
-  </div>
+  <div id="canvas"></div>
   
   <script type="text/javascript">
-
+  
     var graph = new joint.dia.Graph;
 
-    var paper = new joint.shapes.ontouml.Canvas({
+    var paper = new joint.shapes.ontouml.Canvas({        
         el: $('#canvas'),
-        width: 800,
+		width: 800,
         height: 400,
         model: graph
     });
-
-	//paper.on('cell:pointerup', function(cellView) {
-	//	if(cellView.model instanceof joint.dia.Link) return;
-	//	if(cellView.model instanceof joint.shapes.uml.Class){
-	//		var freeTransform = new joint.ui.FreeTransform({ cellView: cellView });
-	//		freeTransform.render();
-	//	}
-	//});
 	
     var rect = new joint.shapes.ontouml.Class({	
         name: 'Forest',
@@ -50,7 +44,7 @@
         position: { x: 100, y: 130 }
     });
 
-	var rect2 = new joint.shapes.ontouml.Class({	
+	var tree = new joint.shapes.ontouml.Class({	
         name: 'Tree',
 		stereotype:'kind',
         position: { x: 400, y: 140 }
@@ -62,18 +56,32 @@
         position: { x: 380, y: 50 }
     });
 	
+	var color = new joint.shapes.ontouml.DataType({	
+        name: 'Color',
+		stereotype: 'quality',       
+        position: { x: 530, y: 50 }
+    });
+	
     var link = new joint.shapes.ontouml.Relationship({
         source: { id: rect.id },
-        target: { id: rect2.id },
-		stereotype: 'memberof'
+        target: { id: tree.id },
+		stereotype: 'memberOf',
+		sourceOrdered:true,
+		targetOrdered:true,
+    });
+	
+	var link3 = new joint.shapes.ontouml.Relationship({
+        source: { id: color.id },
+        target: { id: tree.id },
+		stereotype: 'structuration',
     });
 	
     var link2 = new joint.shapes.ontouml.Generalization({
-        source: { id: rect2.id },
+        source: { id: tree.id },
         target: { id: rect3.id }
     });
 	
-    graph.addCells([rect, rect2, rect3, link, link2]);
+    graph.addCells([rect, tree, rect3, color, link, link2, link3]);
 
   </script>
 </body>
