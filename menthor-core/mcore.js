@@ -2,9 +2,7 @@ joint.shapes.mcore = {};
 	
 /** MCanvas */
 joint.shapes.mcore.MCanvas = joint.dia.Paper.extend({
-	defaults: {
-		
-	},	
+
 });
 
 /** MGeneralization */
@@ -141,14 +139,16 @@ joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
 	},
 	
 	updateCornerLabels: function(){	
+		var offset = 0
+		if(this.getSourceFullLabelName().length>5) offset = (this.getSourceFullLabelName().length+5)
 		this.label(1, {
-			position: -15,
+			position: -15-offset,
 			attrs: {
 				rect: { fill: '#D3D3D3' }, text: { dy:10, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getSourceFullLabelName() }
 			}
 		});	    	
 		this.label(2, {
-			position: 15,
+			position: 15+offset,
 			attrs: {
 				rect: { fill: '#D3D3D3' }, text: { dy:10, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getTargetFullLabelName() }
 			}
@@ -160,8 +160,8 @@ joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
 joint.shapes.mcore.MType = joint.shapes.uml.Class.extend({
 
     defaults: joint.util.deepSupplement({
-        type: 'mcore.MClass',			
-        size: { width: 120, height: 70 },
+        type: 'mcore.MType',			
+        size: { width: 90, height: 40 },
         attrs: {	
 			magnet: true,
             '.uml-class-name-rect': { 'stroke-width': 2, 'fill': '#FFFFFF' },
@@ -177,46 +177,66 @@ joint.shapes.mcore.MType = joint.shapes.uml.Class.extend({
 		return this.getClassName();
 	},
 	
-	updateRectangles: function() {
-        var attrs = this.get('attrs');
-        var rects = [
-            { type: 'name', text: this.getFullName() },
-            { type: 'attrs', text: this.get('attributes') },
-            { type: 'methods', text: this.get('methods') }
-        ];
-        var maxWidth = 0;
+	/** Max width of the texts inside the rectangles 
+	  * i.e. max width between the name, stereotype, attributes and methods */
+	getTextsMaxWidth: function(rects){
+		var max = 0
+	   _.each(rects, function(rect) {
+			var lines = _.isArray(rect.text) ? rect.text : [rect.text];
+			_.each(lines, function(line){		
+				var width = line.length*7.5;	
+				if(width> max) max = width;
+			});
+		});
+		return max		
+	},
+	
+	updateRectanglesWidth: function(rects){
+		var attrs = this.get('attrs');
+        var maxTextWidth = this.getTextsMaxWidth(rects);
+		if(this.get('size').width < maxTextWidth) this.get('size').width = maxTextWidth;
+		var width = this.get('size').width;
+		_.each(rects, function(rect) {
+		     attrs['.uml-class-' + rect.type + '-rect'].width = width;
+		});	
+	},
+	
+	updateRectanglesHeight: function(rects){
+		var attrs = this.get('attrs');		
 		var offsetY = 0;
         _.each(rects, function(rect) {
-            var lines = _.isArray(rect.text) ? rect.text : [rect.text];
-			_.each(lines, function(line){
-				var rectWidth = line.length*8+20;	
-				if(rectWidth> maxWidth) maxWidth = rectWidth;
-			});
-			var rectHeight = lines.length+35;			
-			if(lines.length==0){
+            var rectLines = _.isArray(rect.text) ? rect.text : [rect.text];			
+			var rectHeight = rectLines.length+35;			
+			if(rectLines.length==0){
 				attrs['.uml-class-' + rect.type + '-rect'].display = 'none';
 			}else{
-				attrs['.uml-class-' + rect.type + '-text'].text = lines.join('\n');
+				attrs['.uml-class-' + rect.type + '-text'].text = rectLines.join('\n');
 				attrs['.uml-class-' + rect.type + '-rect'].height = rectHeight;
 				attrs['.uml-class-' + rect.type + '-rect'].transform = 'translate(0,' + offsetY + ')';			
 				offsetY += rectHeight;
 			}
-        });		
-		_.each(rects, function(rect) {
-		     attrs['.uml-class-' + rect.type + '-rect'].width = maxWidth;
-		});				
-		this.get('size').width = maxWidth;
-		this.get('size').height = offsetY;
+        });
+		if(this.get('size').height < offsetY) this.get('size').height = offsetY;
+	},
+	
+	updateRectangles: function() {        
+        var rects = [
+            { type: 'name', text: this.getFullName() },
+            { type: 'attrs', text: this.get('attributes') },
+            { type: 'methods', text: this.get('methods') }
+        ];	
+		this.updateRectanglesWidth(rects);
+		this.updateRectanglesHeight(rects);			
     }	
 });
 
 
 /** MClass */
 joint.shapes.mcore.MClass = joint.shapes.mcore.MType.extend({
-	
+	type: 'mcore.MClass',
 });
 
 /** MDataType */
 joint.shapes.mcore.MDataType = joint.shapes.mcore.MType.extend({
-	
+	type: 'mcore.MDataType',
 });

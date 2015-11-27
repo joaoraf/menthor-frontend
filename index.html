@@ -10,34 +10,134 @@
 	<script src="joint-core/joint.shapes.uml.js"></script>	
 	
 	<!-- Joint Rapid API -->
-	<!--
-	<link rel="stylesheet" type="text/css" href="joint-rapid/css/joint.ui.freeTransform.css" />
-	<script src="joint-rapid/js/joint.dia.freeTransform.js"></script>
-	<script src="joint-rapid/js/joint.ui.freeTransform.js"></script>
 	<link href="joint-rapid/css/joint.ui.stencil.css" rel="stylesheet" type="text/css" />
 	<script src="joint-rapid/js/joint.ui.stencil.js" type="text/javascript" ></script>
-    -->
-	
+   	
 	<!-- Menthor API -->
+	<link rel="stylesheet" href="menthor-core/application.css" />
 	<script src="menthor-core/mcore.js"></script>
 	<script src="menthor-core/ontouml.js"></script>
 		
 </head>
-<body>
-  <div id="canvas"></div>
-  
-  <script type="text/javascript">
+
+<body id="container">
+	
+	<div id="stencil-holder-groups" class="stencil-container">
+	
+	</div>
+    <div id="canvas-holder" class="paper">
+		
+	</div>
+    
+	<script type="text/javascript">
   
     var graph = new joint.dia.Graph;
 
     var paper = new joint.shapes.ontouml.Canvas({        
-        el: $('#canvas'),
-		width: 800,
-        height: 400,
+        el: $('#canvas-holder'),
+		//width: 800,
+        //height: 400,
         model: graph
     });
 	
-    var rect = new joint.shapes.ontouml.Class({	
+	var stencil = new joint.ui.Stencil({ 
+		 paper: paper,
+		 graph: graph,
+		 groups:{
+			substanceSortal: { index: 1, label: 'Substance Sortals' },
+			moment: { index: 2, label: 'Moments' },
+			subTypes: { index: 3, label: 'Subtypes' },
+			mixins: { index: 4, label: 'Mixins' },		
+		 },
+		 search: {
+			'*': ['subType','attrs/text/text','attrs/.label/text'],
+		 },
+		 width: 300,
+		 height: 300
+	});
+	
+	$('#stencil-holder-groups').append(stencil.render().el);
+  		
+	var kind = new joint.shapes.ontouml.Class({	
+        name: 'Kind',
+		stereotype:'kind',        
+        position: { x: 10, y: 10 }, 
+    });	
+	var collective = new joint.shapes.ontouml.Class({	
+        name: 'Collective',
+		stereotype:'collective',        
+        position: { x: 10, y: 60 }, 
+    });		
+	var quantity = new joint.shapes.ontouml.Class({	
+        name: 'Quantity',
+		stereotype:'quantity',        
+        position: { x: 10, y: 110 }, 
+    });	
+	stencil.load([kind, collective, quantity],'substanceSortal');
+			
+	var relator = new joint.shapes.ontouml.Class({	
+        name: 'Relator',
+		stereotype:'relator',        
+        position: { x: 10, y: 10 }, 
+    });	
+	var mode = new joint.shapes.ontouml.Class({	
+        name: 'Mode',
+		stereotype:'mode',        
+        position: { x: 10, y: 60 }, 
+    });		
+	var quality = new joint.shapes.ontouml.Class({	
+        name: 'Quality',
+		stereotype:'quality',        
+        position: { x: 10, y: 110 }, 
+    });	
+	stencil.load([relator, mode, quality],'moment');
+	
+	var subkind = new joint.shapes.ontouml.Class({	
+        name: 'SubKind',
+		stereotype:'subkind',        
+        position: { x: 10, y: 10 }, 		
+    });	
+	var role = new joint.shapes.ontouml.Class({	
+        name: 'Role',
+		stereotype:'role',        
+        position: { x: 10, y: 60 }, 
+    });		
+	var phase = new joint.shapes.ontouml.Class({	
+        name: 'Phase',
+		stereotype:'phase',        
+        position: { x: 10, y: 110 }, 
+    });	
+	stencil.load([subkind, role, phase],'subTypes');
+	
+	var category = new joint.shapes.ontouml.Class({	
+        name: 'Category',
+		stereotype:'category',        
+        position: { x: 10, y: 10 }, 
+    });	
+	var roleMixin = new joint.shapes.ontouml.Class({	
+        name: 'RoleMixin',
+		stereotype:'roleMixin',        
+        position: { x: 10, y: 60 }, 
+    });		
+	var phaseMixin = new joint.shapes.ontouml.Class({	
+        name: 'PhaseMixin',
+		stereotype:'phaseMixin',        
+        position: { x: 10, y: 110 }, 
+    });	
+	var mixin = new joint.shapes.ontouml.Class({	
+        name: 'Mixin',
+		stereotype:'mixin',        
+        position: { x: 10, y: 160 }, 
+    });	
+	stencil.load([category, roleMixin, phaseMixin, mixin],'mixins');
+		
+	stencil.on('filter', function(graph, group) {
+        joint.layout.GridLayout.layout(graph, layoutOptions);
+    });
+	
+	//Example here....
+    
+	var rect = new joint.shapes.ontouml.Class({	
         name: 'Forest',
 		stereotype:'collective',
         attributes: ['name: String'],
@@ -62,12 +162,10 @@
         position: { x: 530, y: 50 }
     });
 	
-    var link = new joint.shapes.ontouml.Relationship({
+	var link = new joint.shapes.ontouml.Relationship({
         source: { id: rect.id },
         target: { id: tree.id },
 		stereotype: 'memberOf',
-		sourceOrdered:true,
-		targetOrdered:true,
     });
 	
 	var link3 = new joint.shapes.ontouml.Relationship({
@@ -83,6 +181,6 @@
 	
     graph.addCells([rect, tree, rect3, color, link, link2, link3]);
 
-  </script>
+	</script>
 </body>
 </html>

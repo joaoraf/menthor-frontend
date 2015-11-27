@@ -55,7 +55,7 @@ joint.shapes.uml.Class = joint.shapes.basic.Generic.extend({
             this.updateRectangles();
             this.trigger('uml-update');
         }, this);
-
+		
         this.updateRectangles();
 
         joint.shapes.basic.Generic.prototype.initialize.apply(this, arguments);
