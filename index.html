@@ -8,178 +8,63 @@
     <script src="joint-core/backbone-min.js"></script>
     <script src="joint-core/joint.js"></script>
 	<script src="joint-core/joint.shapes.uml.js"></script>	
-	
-	<!-- Joint Rapid API -->
-	<link href="joint-rapid/css/joint.ui.stencil.css" rel="stylesheet" type="text/css" />
-	<script src="joint-rapid/js/joint.ui.stencil.js" type="text/javascript" ></script>
-   	
-	<!-- Menthor API -->
-	<link rel="stylesheet" href="menthor-core/application.css" />
-	<script src="menthor-core/mcore.js"></script>
-	<script src="menthor-core/ontouml.js"></script>
+
+	<!-- Menthor Editor API -->
+	<link rel="stylesheet" href="menthor-editor/editor.css" />
+	<script src="menthor-editor/editor.js"></script>
+	<script src="menthor-editor/mcore.js"></script>
+	<script src="menthor-editor/ontouml.js"></script>
 		
 </head>
 
-<body id="container">
+<body>
 	
-	<div id="stencil-holder-groups" class="stencil-container">
-	
+	<div id="tools">
+		<div id="pallete"></div>	
+		<br />		
 	</div>
-    <div id="canvas-holder" class="paper">
-		
+
+	<div id="diagram">
+		<div id="editor">
+			<div class="resize nw"></div>
+			<div class="resize n"></div>
+			<div class="resize ne"></div>
+			<div class="resize e"></div>
+			<div class="resize se"></div>
+			<div class="resize s"></div>
+			<div class="resize sw"></div>
+			<div class="resize w"></div>
+			<div class="tools delete" title="Delete"></div>
+			<div class="tools duplicate" title="Duplicate"></div>
+			<div class="tools connect" title="Connect"></div>
+		</div>
+		<div id="canvas"></div>
 	</div>
     
 	<script type="text/javascript">
-  
-    var graph = new joint.dia.Graph;
-
-    var paper = new joint.shapes.ontouml.Canvas({        
-        el: $('#canvas-holder'),
-		//width: 800,
-        //height: 400,
-        model: graph
-    });
-	
-	var stencil = new joint.ui.Stencil({ 
-		 paper: paper,
-		 graph: graph,
-		 groups:{
-			substanceSortal: { index: 1, label: 'Substance Sortals' },
-			moment: { index: 2, label: 'Moments' },
-			subTypes: { index: 3, label: 'Subtypes' },
-			mixins: { index: 4, label: 'Mixins' },		
-		 },
-		 search: {
-			'*': ['subType','attrs/text/text','attrs/.label/text'],
-		 },
-		 width: 300,
-		 height: 300
-	});
-	
-	$('#stencil-holder-groups').append(stencil.render().el);
-  		
-	var kind = new joint.shapes.ontouml.Class({	
-        name: 'Kind',
-		stereotype:'kind',        
-        position: { x: 10, y: 10 }, 
-    });	
-	var collective = new joint.shapes.ontouml.Class({	
-        name: 'Collective',
-		stereotype:'collective',        
-        position: { x: 10, y: 60 }, 
-    });		
-	var quantity = new joint.shapes.ontouml.Class({	
-        name: 'Quantity',
-		stereotype:'quantity',        
-        position: { x: 10, y: 110 }, 
-    });	
-	stencil.load([kind, collective, quantity],'substanceSortal');
-			
-	var relator = new joint.shapes.ontouml.Class({	
-        name: 'Relator',
-		stereotype:'relator',        
-        position: { x: 10, y: 10 }, 
-    });	
-	var mode = new joint.shapes.ontouml.Class({	
-        name: 'Mode',
-		stereotype:'mode',        
-        position: { x: 10, y: 60 }, 
-    });		
-	var quality = new joint.shapes.ontouml.Class({	
-        name: 'Quality',
-		stereotype:'quality',        
-        position: { x: 10, y: 110 }, 
-    });	
-	stencil.load([relator, mode, quality],'moment');
-	
-	var subkind = new joint.shapes.ontouml.Class({	
-        name: 'SubKind',
-		stereotype:'subkind',        
-        position: { x: 10, y: 10 }, 		
-    });	
-	var role = new joint.shapes.ontouml.Class({	
-        name: 'Role',
-		stereotype:'role',        
-        position: { x: 10, y: 60 }, 
-    });		
-	var phase = new joint.shapes.ontouml.Class({	
-        name: 'Phase',
-		stereotype:'phase',        
-        position: { x: 10, y: 110 }, 
-    });	
-	stencil.load([subkind, role, phase],'subTypes');
-	
-	var category = new joint.shapes.ontouml.Class({	
-        name: 'Category',
-		stereotype:'category',        
-        position: { x: 10, y: 10 }, 
-    });	
-	var roleMixin = new joint.shapes.ontouml.Class({	
-        name: 'RoleMixin',
-		stereotype:'roleMixin',        
-        position: { x: 10, y: 60 }, 
-    });		
-	var phaseMixin = new joint.shapes.ontouml.Class({	
-        name: 'PhaseMixin',
-		stereotype:'phaseMixin',        
-        position: { x: 10, y: 110 }, 
-    });	
-	var mixin = new joint.shapes.ontouml.Class({	
-        name: 'Mixin',
-		stereotype:'mixin',        
-        position: { x: 10, y: 160 }, 
-    });	
-	stencil.load([category, roleMixin, phaseMixin, mixin],'mixins');
-		
-	stencil.on('filter', function(graph, group) {
-        joint.layout.GridLayout.layout(graph, layoutOptions);
-    });
-	
-	//Example here....
     
-	var rect = new joint.shapes.ontouml.Class({	
-        name: 'Forest',
-		stereotype:'collective',
-        attributes: ['name: String'],
-        position: { x: 100, y: 130 }
-    });
-
-	var tree = new joint.shapes.ontouml.Class({	
-        name: 'Tree',
-		stereotype:'kind',
-        position: { x: 400, y: 140 }
-    });
-	
-	var rect3 = new joint.shapes.ontouml.Class({	
-        name: 'Entity',
-		stereotype: 'category',       
-        position: { x: 380, y: 50 }
-    });
-	
-	var color = new joint.shapes.ontouml.DataType({	
-        name: 'Color',
-		stereotype: 'quality',       
-        position: { x: 530, y: 50 }
-    });
-	
-	var link = new joint.shapes.ontouml.Relationship({
-        source: { id: rect.id },
-        target: { id: tree.id },
-		stereotype: 'memberOf',
-    });
-	
-	var link3 = new joint.shapes.ontouml.Relationship({
-        source: { id: color.id },
-        target: { id: tree.id },
-		stereotype: 'structuration',
-    });
-	
-    var link2 = new joint.shapes.ontouml.Generalization({
-        source: { id: tree.id },
-        target: { id: rect3.id }
-    });
-	
-    graph.addCells([rect, tree, rect3, color, link, link2, link3]);
+	var tools = new joint.dia.Graph;
+	var pallete = new joint.dia.Paper({
+		el: $('#pallete'),
+		width: $("#pallete").width(),
+		height: $("#pallete").height(),
+		gridSize: 1,
+		interactive: false,
+		model: tools
+	});
+	setupPallete(pallete)
+	_.each(palleteElements(), function(c) { tools.addCell(c); });
+   
+	graph = new joint.dia.Graph;
+	canvas = new joint.dia.Paper({
+		el: $('#canvas'),
+		width: $("#diagram").width()*2,
+		height: $("#diagram").height()*2,
+		defaultLink: new joint.shapes.ontouml.Relationship,
+		gridSize: 1,
+		model: graph
+	});		    	
+	graph.addCells(runningExample());
 
 	</script>
 </body>

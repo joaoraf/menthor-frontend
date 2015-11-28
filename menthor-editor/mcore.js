@@ -177,6 +177,14 @@ joint.shapes.mcore.MType = joint.shapes.uml.Class.extend({
 		return this.getClassName();
 	},
 	
+	getWidth: function(){
+		return this.get('size').width;
+	},
+	
+	getHeight: function(){
+		return this.get('size').height;
+	},
+	
 	/** Max width of the texts inside the rectangles 
 	  * i.e. max width between the name, stereotype, attributes and methods */
 	getTextsMaxWidth: function(rects){

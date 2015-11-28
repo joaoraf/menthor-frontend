@@ -7,13 +7,13 @@ joint.shapes.ontouml.Canvas = joint.shapes.mcore.MCanvas.extend({
 
 /** OntoUML Generalization */
 joint.shapes.ontouml.Generalization = joint.shapes.mcore.MGeneralization.extend({
-
+	type: 'joint.shapes.ontouml.Generalization',	
 });
 
 /** OntoUML Relationship */
 joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 	defaults: joint.util.deepSupplement({ 
-		type: 'ontouml.Relationship',		
+		type: 'joint.shapes.ontouml.Relationship',		
 		stereotype: [],
 		essentialPart: false,
 		immutablePart: false,
@@ -27,7 +27,7 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
     },
 	
 	getStereotypeName: function() {
-        return this.get('stereotype');
+        return String(this.get('stereotype'));
     },
 	
 	isShareable: function() {
@@ -108,7 +108,7 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 joint.shapes.ontouml.DataType = joint.shapes.mcore.MDataType.extend({
 
     defaults: joint.util.deepSupplement({
-        type: 'ontouml.DataType',		
+        type: 'joint.shapes.ontouml.DataType',		
         stereotype: []
     }, joint.shapes.mcore.MDataType.prototype.defaults),
 	
@@ -129,7 +129,7 @@ joint.shapes.ontouml.DataType = joint.shapes.mcore.MDataType.extend({
 joint.shapes.ontouml.Class = joint.shapes.mcore.MClass.extend({
 
     defaults: joint.util.deepSupplement({
-        type: 'ontouml.Class',		
+        type: 'joint.shapes.ontouml.Class',		
         stereotype: []
     }, joint.shapes.mcore.MClass.prototype.defaults),
 	
