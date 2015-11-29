@@ -42,7 +42,7 @@
 	</div>
     
 	<script type="text/javascript">
-    
+	
 	var tools = new joint.dia.Graph;
 	var pallete = new joint.dia.Paper({
 		el: $('#pallete'),
@@ -52,7 +52,7 @@
 		interactive: false,
 		model: tools
 	});
-	setupPallete(pallete)
+	setupPallete(pallete)	
 	_.each(palleteElements(), function(c) { tools.addCell(c); });
    
 	graph = new joint.dia.Graph;
@@ -63,9 +63,12 @@
 		defaultLink: new joint.shapes.ontouml.Relationship,
 		gridSize: 1,
 		model: graph
-	});		    	
+	});	
+	setupSelection(graph, canvas);
+	setupEdition(graph, canvas);
+	//example
 	graph.addCells(runningExample());
-
+	
 	</script>
 </body>
 </html>

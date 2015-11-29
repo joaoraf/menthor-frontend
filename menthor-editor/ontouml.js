@@ -23,7 +23,11 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 	}, joint.shapes.mcore.MRelationship.prototype.defaults),
 		
 	getStereotype: function() {
-        return "\u00AB"+this.get('stereotype')+"\u00BB";
+		if(this.get('stereotype')!=null && this.get('stereotype')!=""){
+			return "\u00AB"+this.get('stereotype')+"\u00BB";
+		}else{
+			return "";
+		}
     },
 	
 	getStereotypeName: function() {

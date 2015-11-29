@@ -1,71 +1,28 @@
- function palleteElements(){
-	var kind = new joint.shapes.ontouml.Class({	
-		name: 'Kind',
-		stereotype:'kind',        
-		position: { x: 10, y: 10 }, 
-	});	
-	var collective = new joint.shapes.ontouml.Class({	
-		name: 'Collective',
-		stereotype:'collective',        
-		position: { x: 110, y: 10 }, 
-	});		
-	var quantity = new joint.shapes.ontouml.Class({	
-		name: 'Quantity',
-		stereotype:'quantity',        
-		position: { x: 10, y: 60 }, 
-	});					
-	var relator = new joint.shapes.ontouml.Class({	
-		name: 'Relator',
-		stereotype:'relator',        
-		position: { x: 110, y: 60 }, 
-	});	
-	var mode = new joint.shapes.ontouml.Class({	
-		name: 'Mode',
-		stereotype:'mode',        
-		position: { x: 10, y: 110 }, 
-	});		
-	var quality = new joint.shapes.ontouml.Class({	
-		name: 'Quality',
-		stereotype:'quality',        
-		position: { x: 110, y: 110 }, 
-	});			
-	var subkind = new joint.shapes.ontouml.Class({	
-		name: 'SubKind',
-		stereotype:'subkind',        
-		position: { x: 10, y: 160 }, 		
-	});	
-	var role = new joint.shapes.ontouml.Class({	
-		name: 'Role',
-		stereotype:'role',        
-		position: { x: 110, y: 160 }, 
-	});		
-	var phase = new joint.shapes.ontouml.Class({	
-		name: 'Phase',
-		stereotype:'phase',        
-		position: { x: 10, y: 210 }, 
-	});		
-	var category = new joint.shapes.ontouml.Class({	
-		name: 'Category',
-		stereotype:'category',        
-		position: { x: 110, y: 210 }, 
-	});	
-	var roleMixin = new joint.shapes.ontouml.Class({	
-		name: 'RoleMixin',
-		stereotype:'roleMixin',        
-		position: { x: 10, y: 260 }, 
-	});		
-	var phaseMixin = new joint.shapes.ontouml.Class({	
-		name: 'PhaseMixin',
-		stereotype:'phaseMixin',        
-		position: { x: 110, y: 260 }, 
-	});	
-	var mixin = new joint.shapes.ontouml.Class({	
-		name: 'Mixin',
-		stereotype:'mixin',        
-		position: { x: 10, y: 310 }, 
-	});	
-	return [kind, collective, quantity, relator, mode, quality, 
-			subkind, role, phase,category, roleMixin, phaseMixin, mixin];
+function palleteElements(){
+	var kind = createClass(joint.shapes.ontouml.Class,'Kind','kind',10,10);	
+	var collective = createClass(joint.shapes.ontouml.Class,'Collective','collective', 110, 10);		
+	var quantity = createClass(joint.shapes.ontouml.Class,'Quantity','quantity', 10, 60);					
+	var relator = createClass(joint.shapes.ontouml.Class,'Relator','relator', 110, 60);	
+	var mode = createClass(joint.shapes.ontouml.Class,'Mode','mode', 10, 110);		
+	var quality = createClass(joint.shapes.ontouml.Class,'Quality','quality', 110, 110);			
+	var subkind = createClass(joint.shapes.ontouml.Class,'SubKind','subkind', 10, 160 );	
+	var role = createClass(joint.shapes.ontouml.Class,'Role','role', 110, 160);		
+	var phase = createClass(joint.shapes.ontouml.Class,'Phase','phase',10, 210);		
+	var category = createClass(joint.shapes.ontouml.Class,'Category','category', 110, 210);	
+	var roleMixin = createClass(joint.shapes.ontouml.Class,'RoleMixin','roleMixin',10, 260);		
+	var phaseMixin = createClass(joint.shapes.ontouml.Class,'PhaseMixin','phaseMixin',110, 260);	
+	var mixin = createClass(joint.shapes.ontouml.Class,'Mixin','mixin',10, 310);	
+	var event = createClass(joint.shapes.ontouml.Class,'Event','event',110, 310);	
+	var highorder = createClass(joint.shapes.ontouml.Class,'HighOrder','highorder',10, 360);	
+	return [kind, collective, quantity, relator, mode, quality, subkind, role, phase,category, roleMixin, phaseMixin, mixin, event, highorder];
+}
+
+function createClass(classe, name, stereotype, x, y) {
+	return new classe({
+		position: { x: x  , y: y },
+		name: name,
+		stereotype,
+	});
 }
 
 function runningExample(){
@@ -112,17 +69,9 @@ function runningExample(){
     });
 	return [rect, tree, rect3, color, link, link2, link3]
 }
-
-function createClass(classe, name, stereotype, x, y) {
-	return new classe({
-		position: { x: x  , y: y },
-		name: name,
-		stereotype,
-	});
-}
 	
+/** Drag and drop installation on the pallete */
 function setupPallete(pallete){
-	//drag and drop installation
 	pallete.on('cell:pointerdown', function(cellView, evt, x, y){		
 		var fake = $("<div class='dnd'><div id='dnd'></div></div>").appendTo("body").css("left", x+"px").css("top", y+"px");		
 		var fakeElem = createClass(eval(cellView.model.get("type")), cellView.model.get("name"), cellView.model.get("stereotype"), 0, 0);
@@ -148,4 +97,101 @@ function setupPallete(pallete){
 			fake.remove();
 		});		
 	 });
+}
+ 
+function setupEdition(graph, paper){
+	setupDeletion(graph)
+	setupDuplication(graph)
+	setupConnection(graph, paper)
+}
+
+//'static' property of selections
+setupSelection.selectedElement = null
+	
+/** Setup the selection box which envolves the element and allows editions like resizing, connections and etc. */
+function setupSelection(graph, paper){	
+	paper.on('cell:pointerclick', function(cellView, evt, x, y){
+		if(cellView.model instanceof joint.shapes.mcore.MType){			
+			setupSelection.selectedElement = cellView;			
+			console.log("Selected: "+setupSelection.selectedElement)			
+			updateEditor(setupSelection.selectedElement);
+		}
+	});
+	paper.on('blank:pointerdown', function(cellView, evt, x, y){
+		setupSelection.selectedElement = null;
+		$("#editor").hide();
+	});
+	paper.on('cell:pointermove', function(cellView, evt, x, y){
+		if(cellView.model instanceof joint.shapes.mcore.MType)
+		 	updateEditor(cellView);
+	 	else{
+		 	$("#editor").hide();
+		}
+	});	
+}
+
+function updateEditor(cell) {
+	var currentScale = 1;
+	if(cell != null){		
+		$("#editor").css("top", ($("#"+cell.id).offset().top-2+$("#diagram").scrollTop())+"px");
+		$("#editor").css("left", ($("#"+cell.id).offset().left-$("#diagram").offset().left-2+$("#diagram").scrollLeft())+"px");		
+		$("#editor").width((cell.model.get("size").width+2)*currentScale);
+		$("#editor").height((cell.model.get("size").height+2)*currentScale);
+		$("#editor").show();	
+	}	
+}
+
+function setupDeletion(graph){
+	$(".delete").mousedown(function(evt){
+		evt.preventDefault();
+		evt.stopPropagation();	
+		console.log("Delete: "+setupSelection.selectedElement)		
+		graph.getCell(setupSelection.selectedElement.model.get("id")).remove();
+		$("#editor").hide();
+	});
+}
+
+function setupDuplication(graph){
+	$(".duplicate").mousedown(function(evt){
+		evt.preventDefault();
+		evt.stopPropagation();
+		console.log("Duplicate	: "+setupSelection.selectedElement)
+		var newCell = graph.getCell(setupSelection.selectedElement.model.get("id")).clone();
+		graph.addCell(newCell);
+		newCell.translate(10, 10);
+		$("#editor").hide();
+	});
+}	
+
+function setupConnection(graph, paper){
+	$(".connect").mousedown(function(evt){
+		evt.preventDefault();
+		evt.stopPropagation();
+		var cell = graph.getCell(setupSelection.selectedElement.model.get("id"));			
+		var link = paper.getDefaultLink();		
+		link.set("source", {
+		    id: setupSelection.selectedElement.model.get("id")
+		});
+		link.set("target", paper.snapToGrid({
+		    x: evt.clientX,
+		    y: evt.clientY
+		}));			
+		graph.addCell(link, {
+		    validation: false
+		});
+		var linkView = paper.findViewByModel(link);
+		linkView.startArrowheadMove("target");			
+		$("body").mouseup(function(evt){
+			linkView.pointerup(evt);
+			$("body").unbind();
+		});
+		$("body").mousemove(function(evt){
+			var coords = paper.snapToGrid({
+				x: evt.clientX,
+				y: evt.clientY
+			});
+			linkView.pointermove(evt, coords.x, coords.y)
+		});
+		$("#editor").hide();
+	});
 }
