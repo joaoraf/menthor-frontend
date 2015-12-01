@@ -19,7 +19,7 @@ joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
 
 /** MRelationship */
 joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
-    defaults: joint.util.deepSupplement({ 
+    defaults: joint.util.deepSupplement({ 		
 		type: 'mcore.MRelationship',
 		labels: [],
 		name: [],

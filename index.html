@@ -52,7 +52,7 @@
 		interactive: false,
 		model: tools
 	});
-	setupPallete(pallete)	
+	allowDnDOnPallete(pallete);
 	_.each(palleteElements(), function(c) { tools.addCell(c); });
    
 	graph = new joint.dia.Graph;
@@ -62,13 +62,18 @@
 		height: $("#diagram").height()*2,
 		defaultLink: new joint.shapes.ontouml.Relationship,
 		gridSize: 1,
-		model: graph
+		model: graph,
+		labelMove:true,
 	});	
-	setupSelection(graph, canvas);
-	setupEdition(graph, canvas);
-	//example
-	graph.addCells(runningExample());
 	
+	allowSelecting(graph, canvas);
+	allowEditing(graph, canvas);
+	
+	forbidDroppingLinksOnCanvas(canvas);
+	
+	//example
+	runningExample(graph);
+  
 	</script>
 </body>
 </html>

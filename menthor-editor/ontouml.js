@@ -12,9 +12,11 @@ joint.shapes.ontouml.Generalization = joint.shapes.mcore.MGeneralization.extend(
 
 /** OntoUML Relationship */
 joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
+	
 	defaults: joint.util.deepSupplement({ 
 		type: 'joint.shapes.ontouml.Relationship',		
 		stereotype: [],
+		derivation: [],
 		essentialPart: false,
 		immutablePart: false,
 		immutableWhole: false,
@@ -87,6 +89,25 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
         });	
 	},
 	
+	//not working...
+	midpoint: function(graph){
+		var srcCenter = graph.getCell(this.get('source').id).getBBox().center();		
+        var trgCenter = graph.getCell(this.get('target').id).getBBox().center();
+        var midPoint = g.line(srcCenter, trgCenter).midpoint();
+		return midPoint;
+	},
+	
+	setTruthMaker: function(graph, truthMakerId){
+		if(truthMakerId!=null){
+			this.derivation = new joint.shapes.ontouml.Relationship({
+				stereotype:'derivation',
+				source: { x: this.midpoint(graph).x, y:this.midpoint(graph).y },
+				target: { id: truthMakerId },
+			});
+			return this.derivation
+		}				
+	},		
+		
 	initialize: function() {
 		
 		joint.shapes.mcore.MRelationship.prototype.initialize.apply(this, arguments);
@@ -98,13 +119,26 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 			var color = 'white'
 			if(!this.isShareable()) color = 'black'
 			this.attr('.marker-source', { d: 'M 20 8 L 10 0 L 0 8 L 10 16 z', fill: color});			
+		}else if(this.getStereotypeName().toLowerCase()=='derivation'){				
+			this.attr('.connection', { 'stroke-dasharray': '5,5' });		
+			this.attr('.marker-target', { d: 'M-5,0a5,5 0 1,0 10,0a5,5 0 1,0 -10,0', fill: color});					
+		} else if(this.getStereotypeName().toLowerCase=='material'){
+			
 		}
+		
+		this.on('add change:size', function() { this.updatePath(); }, this);
 		
 		this.on('add change:stereotype',function() { this.updateStereotypeLabel(); }, this);
 		
 		this.on('add change:essentialPart change:immutablePart change:immutableWhole change:inseparablePart', 
 		function() { this.updateMetaAttributeLabels(); }, this);
     },
+	
+	updatePath: function(){
+		if(this.derivation!=null){
+			//alert("changing size")
+		}
+	},
 	
 });
 
@@ -147,5 +181,5 @@ joint.shapes.ontouml.Class = joint.shapes.mcore.MClass.extend({
 		}else{
 			return this.get('name');
 		}
-    }
+    }	
 });
