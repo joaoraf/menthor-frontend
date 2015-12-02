@@ -172,6 +172,12 @@ button:hover
 	text-align: center;
 	border-right: 1px solid #333;
 }
+#logo { 
+    float:left;
+    width: 250px;
+    height:50px;
+    background:white
+}
 #pallete
 {
 	padding: 10px;

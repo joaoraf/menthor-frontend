@@ -396,7 +396,7 @@ function allowDuplicates(graph){
 	});
 }	
 
-function openConnectContextMenu(link, xPos,yPos){
+function openConnectContextMenu(evt, graph, paper){
 	$.contextMenu({
 		 selector: '.contextmenu', 
 		 events: {  
@@ -404,10 +404,20 @@ function openConnectContextMenu(link, xPos,yPos){
 		 },
 		 callback: $.proxy(function(key, options) {                         
 			if(key!=null && key!=""){
-				link.setStereotype(key); 
+				if(key!="generalization") {
+					var rel = new joint.shapes.ontouml.Relationship();
+					rel.setStereotype(key);
+					dragAndDropLink(evt,graph,paper,rel)
+					return rel;
+				}else{
+					var gen = new joint.shapes.ontouml.Generalization();
+					dragAndDropLink(evt,graph,paper,gen)
+				}
 			}
          }),
 		 items:{
+			"generalization": {name: "Generalization"},
+			"sep0":  "------------------",
 			"mediation": {name: "Mediation"},
 			"characerization": {name: "Characterization"},
 			"structuration": {name: "Structuration"},
@@ -431,40 +441,44 @@ function openConnectContextMenu(link, xPos,yPos){
 			"instanceOf": {name: "InstanceOf" },
 		 }
 	 });			
+	 var xPos = evt.clientX;
+	 var yPos = evt.clientY;
 	 $('.contextmenu').contextMenu({x: xPos, y: yPos});
+}
+
+function dragAndDropLink(evt, graph, paper, link){
+	var cell = graph.getCell(allowSelecting.selectedElement.model.get("id"));	
+	link.set("source", {
+		id: allowSelecting.selectedElement.model.get("id")
+	});
+	link.set("target", paper.snapToGrid({
+		x: evt.clientX,
+		y: evt.clientY
+	}));			
+	graph.addCell(link, {
+		validation: false
+	});
+	var linkView = paper.findViewByModel(link);
+	linkView.startArrowheadMove("target");
+	$("body").mouseup(function(evt){		
+		linkView.pointerup(evt);
+		$("body").unbind();
+	});
+	$("body").mousemove(function(evt){
+		var coords = paper.snapToGrid({
+			x: evt.clientX,
+			y: evt.clientY
+		});
+		linkView.pointermove(evt, coords.x, coords.y)
+	});
+	$("#editor").hide();
 }
 
 function allowConnecting(graph, paper){
 	$(".connect").mousedown(function(evt){
 		evt.preventDefault();
 		evt.stopPropagation();
-		var cell = graph.getCell(allowSelecting.selectedElement.model.get("id"));			
-		var link = paper.getDefaultLink();		
-		link.set("source", {
-		    id: allowSelecting.selectedElement.model.get("id")
-		});
-		link.set("target", paper.snapToGrid({
-		    x: evt.clientX,
-		    y: evt.clientY
-		}));			
-		graph.addCell(link, {
-		    validation: false
-		});
-		var linkView = paper.findViewByModel(link);
-		linkView.startArrowheadMove("target");			
-		$("body").mouseup(function(evt){			
-			openConnectContextMenu(link, evt.clientX,evt.clientY)
-			linkView.pointerup(evt);
-			$("body").unbind();
-		});
-		$("body").mousemove(function(evt){
-			var coords = paper.snapToGrid({
-				x: evt.clientX,
-				y: evt.clientY
-			});
-			linkView.pointermove(evt, coords.x, coords.y)
-		});
-		$("#editor").hide();
+		openConnectContextMenu(evt, graph, paper);		
 	});	
 }
 
