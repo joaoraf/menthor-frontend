@@ -106,23 +106,27 @@ function allowSelecting(graph, paper){
 			allowSelecting.selectedElement = cellView;			
 			console.log("Selected: "+allowSelecting.selectedElement)			
 			updateEditor(allowSelecting.selectedElement);
-		}
+		}		
 	});
 	paper.on('blank:pointerdown', function(cellView, evt, x, y){
 		allowSelecting.selectedElement = null;
 		$("#editor").hide();
 	});
 	paper.on('cell:pointermove', function(cellView, evt, x, y){
-		if(cellView.model instanceof joint.shapes.mcore.MType)
+		if(cellView.model instanceof joint.shapes.mcore.MType){
+			if(allowSelecting.selectedElement==null) {
+				allowSelecting.selectedElement = cellView;
+				console.log("Selected: "+allowSelecting.selectedElement)
+			}
 		 	updateEditor(cellView);
-	 	else{
+	 	}else{
 		 	$("#editor").hide();
 		}
 	});	
 }
 
 //=====================================================
-//Concrete methods themselves
+//Auxiliary methods...
 //=====================================================
 
 function disallowInteractionsOnLinks(graph, canvas){
@@ -392,6 +396,44 @@ function allowDuplicates(graph){
 	});
 }	
 
+function openConnectContextMenu(link, xPos,yPos){
+	$.contextMenu({
+		 selector: '.contextmenu', 
+		 events: {  
+			 hide:function(){ $.contextMenu( 'destroy' ); }
+		 },
+		 callback: $.proxy(function(key, options) {                         
+			if(key!=null && key!=""){
+				link.setStereotype(key); 
+			}
+         }),
+		 items:{
+			"mediation": {name: "Mediation"},
+			"characerization": {name: "Characterization"},
+			"structuration": {name: "Structuration"},
+			"sep1":  "------------------",
+			"formal": {name: "Formal"},
+			"material": {name: "Material"},
+			"derivation": {name: "Derivation"},
+			"sep2":  "------------------",
+			"componentOf": {name: "ComponentOf"},
+			"memberOf": {name: "MemberOf"},
+			"subcollectionOf": {name: "SubCollectionOf"},
+			"subquantityOf": {name: "SubQuantityOf"},
+			"quapartOf": {name: "QuaPartOf" },
+			"constitution": {name: "Constitution" },
+			"sep3":  "------------------",
+			"causation": {name: "Causation" },
+			"participation": {name: "Participation" },
+			"subeventOf": {name: "SubEventOf" },
+			"temporal": {name: "Temporal" },
+			"sep4":  "------------------",
+			"instanceOf": {name: "InstanceOf" },
+		 }
+	 });			
+	 $('.contextmenu').contextMenu({x: xPos, y: yPos});
+}
+
 function allowConnecting(graph, paper){
 	$(".connect").mousedown(function(evt){
 		evt.preventDefault();
@@ -410,7 +452,8 @@ function allowConnecting(graph, paper){
 		});
 		var linkView = paper.findViewByModel(link);
 		linkView.startArrowheadMove("target");			
-		$("body").mouseup(function(evt){
+		$("body").mouseup(function(evt){			
+			openConnectContextMenu(link, evt.clientX,evt.clientY)
 			linkView.pointerup(evt);
 			$("body").unbind();
 		});

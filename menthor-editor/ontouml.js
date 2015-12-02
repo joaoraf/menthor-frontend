@@ -32,6 +32,10 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 		}
     },
 	
+	setStereotype: function(stereo) {
+        this.set('stereotype', stereo);
+    },
+	
 	getStereotypeName: function() {
         return String(this.get('stereotype'));
     },
@@ -89,7 +93,7 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
         });	
 	},
 	
-	//not working...
+	//not working... 	
 	midpoint: function(graph){
 		var srcCenter = graph.getCell(this.get('source').id).getBBox().center();		
         var trgCenter = graph.getCell(this.get('target').id).getBBox().center();
@@ -108,10 +112,7 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 		}				
 	},		
 		
-	initialize: function() {
-		
-		joint.shapes.mcore.MRelationship.prototype.initialize.apply(this, arguments);
-		
+	updateShape: function(){
 		if(this.getStereotypeName().toLowerCase()== 'componentof' || this.getStereotypeName().toLowerCase()== 'memberof'
 		|| this.getStereotypeName().toLowerCase()== 'subcollectionof' || this.getStereotypeName().toLowerCase()== 'subquantityof'
 		|| this.getStereotypeName().toLowerCase()== 'subeventof' || this.getStereotypeName().toLowerCase()== 'constitution'
@@ -124,11 +125,18 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 			this.attr('.marker-target', { d: 'M-5,0a5,5 0 1,0 10,0a5,5 0 1,0 -10,0', fill: color});					
 		} else if(this.getStereotypeName().toLowerCase=='material'){
 			
-		}
+		}	
+	},
+	
+	initialize: function() {
+		
+		joint.shapes.mcore.MRelationship.prototype.initialize.apply(this, arguments);
+		
+		this.updateShape();
 		
 		this.on('add change:size', function() { this.updatePath(); }, this);
 		
-		this.on('add change:stereotype',function() { this.updateStereotypeLabel(); }, this);
+		this.on('add change:stereotype',function() { this.updateStereotypeLabel(); this.updateShape(); }, this);
 		
 		this.on('add change:essentialPart change:immutablePart change:immutableWhole change:inseparablePart', 
 		function() { this.updateMetaAttributeLabels(); }, this);

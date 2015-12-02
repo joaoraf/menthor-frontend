@@ -9,6 +9,10 @@
     <script src="joint-core/joint.js"></script>
 	<script src="joint-core/joint.shapes.uml.js"></script>	
 
+	<!-- Draw2D API -->
+	<link rel="stylesheet" href="draw2d/css/contextmenu.css" />
+	<script src="draw2d/lib/jquery.contextmenu.js"></script>
+    
 	<!-- Menthor Editor API -->
 	<link rel="stylesheet" href="menthor-editor/editor.css" />
 	<script src="menthor-editor/editor.js"></script>
@@ -37,6 +41,7 @@
 			<div class="tools delete" title="Delete"></div>
 			<div class="tools duplicate" title="Duplicate"></div>
 			<div class="tools connect" title="Connect"></div>
+			<div class="contextmenu"></div>
 		</div>
 		<div id="canvas"></div>
 	</div>
@@ -68,6 +73,22 @@
 	
 	allowSelecting(graph, canvas);
 	allowEditing(graph, canvas);
+	
+	//this overrides right click on canvas.
+	/*
+	canvas.$el.on('contextmenu', function(evt) { 
+		evt.stopPropagation(); // Stop bubbling so that the paper does not handle mousedown.
+		evt.preventDefault();  // Prevent displaying default browser context menu.
+		var cellView = canvas.findView(evt.target);
+		if (cellView) {
+		   // The context menu was brought up when clicking a cell view in the paper.
+		   console.log(cellView.model.id);  // So now you have access to both the cell view and its model.
+		   // ... display custom context menu, ...
+		}
+	})
+	*/
+	
+	//movable labels might be like this...
 	
 	forbidDroppingLinksOnCanvas(canvas);
 	
