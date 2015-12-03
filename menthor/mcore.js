@@ -1,11 +1,5 @@
 joint.shapes.mcore = {};
 	
-/** MCanvas */
-joint.shapes.mcore.MCanvas = joint.dia.Paper.extend({
-
-	
-});
-
 /** MGeneralization */
 joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
 	defaults: joint.util.deepSupplement({  

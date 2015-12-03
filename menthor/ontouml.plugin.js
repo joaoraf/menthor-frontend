@@ -1,5 +1,5 @@
 //=====================================================
-//Pallete (OntoUML)
+//Pallete
 //=====================================================
 
 extend(OntoUMLPallete,Pallete);
@@ -32,7 +32,7 @@ function OntoUMLPallete(){
 }
 
 //=====================================================
-//Connections Suggestion (OntoUML)
+//Connections Suggestions
 //=====================================================
 
 extend(OntoUMLConnSuggestions,ConnSuggestions);
@@ -84,10 +84,10 @@ function OntoUMLConnSuggestions(){
 }
 
 //=====================================================
-//Runnin example (OntoUML)
+//Runnin example
 //=====================================================
 
-function runningExample(graph){
+function runningExample(canvas){
 	var forest = new joint.shapes.ontouml.Class({	
         name: 'Forest',
 		stereotype:'collective',
@@ -123,7 +123,7 @@ function runningExample(graph){
         source: { id: tree.id },
         target: { id: entity.id }
     });	
-	graph.addCells([forest, tree, entity, color, link, link2, material]);
+	canvas.getGraph().addCells([forest, tree, entity, color, link, link2, material]);
 	
 	//var derivation = material.setTruthMaker(graph, forest.id)
 	//graph.addCells([derivation])

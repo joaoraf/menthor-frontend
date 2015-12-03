@@ -1,10 +1,5 @@
 joint.shapes.ontouml = {};
 
-/** OntoUML Canvas */
-joint.shapes.ontouml.Canvas = joint.shapes.mcore.MCanvas.extend({
-
-});
-
 /** OntoUML Generalization */
 joint.shapes.ontouml.Generalization = joint.shapes.mcore.MGeneralization.extend({
 	type: 'joint.shapes.ontouml.Generalization',	
