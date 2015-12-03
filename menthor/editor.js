@@ -31,7 +31,7 @@ function Pallete(){
 		return new class_({
 			position: { x: x  , y: y },
 			name: name,
-			stereotype,
+			stereotype: stereotype,
 		});
 	};
 	
@@ -74,7 +74,11 @@ function ConnSuggestions(){
 	this.map = {};
 	
 	this.defaultConnections = function(){
-		this.map = { 'Generalization': new joint.shapes.mcore.MGeneralization(), 'Relationship': new joint.shapes.mcore.MRelationship()}
+		this.map = { 'Generalization': 'joint.shapes.mcore.MGeneralization', 'Relationship': 'joint.shapes.mcore.MRelationship'}
+	};
+	
+	this.createConnection = function (connClass, stereotype) {
+		return new connClass({stereotype:stereotype});
 	};
 	
 	this.installOn = function(canvas){
@@ -96,7 +100,7 @@ function ConnSuggestions(){
 				},
 				callback: $.proxy((function(key, options) {                         
 					if(key!=null && key!=""){	
-						var link = this.map[menuItems[key].name]
+						var link = this.createConnection(eval(this.map[menuItems[key].name]),(String(key)).toLowerCase())
 						dndLink(evt,canvas.getGraph(),canvas.getPaper(),link);											
 					}
 				}).bind(this)),
@@ -511,14 +515,36 @@ function Canvas(htmlElemId){
 
 function allowRightClickMenus(graph, paper){
 	paper.$el.on('contextmenu', function(evt) { 
-		evt.stopPropagation(); // Stop bubbling so that the paper does not handle mousedown.
-		evt.preventDefault();  // Prevent displaying default browser context menu.
-		var cellView = canvas.findView(evt.target);
-		if (cellView) {
-		   // The context menu was brought up when clicking a cell view in the paper.
-		   console.log(cellView.model.id);  // So now you have access to both the cell view and its model.
+		evt.stopPropagation(); 
+		evt.preventDefault();  
+		var cellView = paper.findView(evt.target);
+		if (cellView) {		   
+		   console.log(cellView.model.id);
 		   if(cellView.model instanceof joint.dia.Link){
-				//context menu for line style
+				$.contextMenu({
+					selector: '.contextmenu', 
+					events: {  
+						 hide:function(){ $.contextMenu( 'destroy' ); }
+					},
+					callback: $.proxy((function(key, options) {                         
+						if(key!=null && key!=""){
+							if(key==="manhatan") cellView.model.set('router', { name: 'manhattan' });
+							if(key==="metro") cellView.model.set('router', { name: 'metro' });
+							if(key==="orthogonal") cellView.model.set('router', { name: 'orthogonal' });
+							if(key==="verticaltree") verticalTreeRouter(graph, cellView); 
+							if(key==="horizontaltree") horizontalTreeRouter(graph, cellView);
+							if(key==="direct") cellView.model.set('vertices',{});
+						}
+					}).bind(this)),
+					items: { 
+						"direct": {name: "Direct"},
+						"verticaltree": {name: "Vertical Tree" }, 
+						"horizontaltree": {name: "Horizontal Tree" },
+						"orthogonal" : {name: "Orthogonal"}, 
+						"manhatan": {name: "Manhatan"}, 
+						"metro": {name: "Metro"}}
+				});	
+				$('.contextmenu').contextMenu({x: evt.clientX, y: evt.clientY});
 		   }
 		}
 	})	

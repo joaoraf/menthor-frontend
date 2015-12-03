@@ -1,13 +1,8 @@
-//=====================================================
-//Pallete
-//=====================================================
-
 extend(OntoUMLPallete,Pallete);
-	
-function OntoUMLPallete(){
-	
-	this.language = "OntoUML"
+extend(OntoUMLConnSuggestions,ConnSuggestions);
 
+function OntoUMLPallete(){
+	this.language = "OntoUML"
 	this.elements = function(){
 		var kind = this.createElement(joint.shapes.ontouml.Class,'Kind',10,10,'kind');	
 		var collective = this.createElement(joint.shapes.ontouml.Class,'Collective',110, 10, 'collective');		
@@ -30,57 +25,31 @@ function OntoUMLPallete(){
 		return [kind, collective, quantity, relator, mode, quality, subkind, role, phase,category, roleMixin, phaseMixin, mixin, event, highorder, domain, dimension, enumeration];
 	}		
 }
-
-//=====================================================
-//Connections Suggestions
-//=====================================================
-
-extend(OntoUMLConnSuggestions,ConnSuggestions);
 	
 function OntoUMLConnSuggestions(){
-	
 	this.language = "OntoUML"
-		
 	this.defaultConnections = function(){
-		generalization = new joint.shapes.ontouml.Generalization();
-		mediation = new joint.shapes.ontouml.Relationship(); mediation.setStereotype("mediation");
-		characterization = new joint.shapes.ontouml.Relationship(); characterization.setStereotype("characterization");
-		structuration = new joint.shapes.ontouml.Relationship(); structuration.setStereotype("structuration");
-		formal = new joint.shapes.ontouml.Relationship(); formal.setStereotype("formal");
-		material = new joint.shapes.ontouml.Relationship(); material.setStereotype("material");
-		derivation = new joint.shapes.ontouml.Relationship(); derivation.setStereotype("derivation");
-		componentOf = new joint.shapes.ontouml.Relationship(); componentOf.setStereotype("componentOf");
-		memberOf = new joint.shapes.ontouml.Relationship(); memberOf.setStereotype("memberOf");
-		subCollectionOf = new joint.shapes.ontouml.Relationship(); subCollectionOf.setStereotype("subCollectionOf");
-		subQuantityOf = new joint.shapes.ontouml.Relationship(); subQuantityOf.setStereotype("subQuantityOf");		
-		quaPartOf = new joint.shapes.ontouml.Relationship(); quaPartOf.setStereotype("quaPartOf");
-		constitution = new joint.shapes.ontouml.Relationship(); constitution.setStereotype("constitution");
-		causation = new joint.shapes.ontouml.Relationship(); causation.setStereotype("causation");
-		participation = new joint.shapes.ontouml.Relationship(); participation.setStereotype("participation");
-		subEventOf = new joint.shapes.ontouml.Relationship(); subEventOf.setStereotype("subEventOf");
-		temporal = new joint.shapes.ontouml.Relationship(); temporal.setStereotype("temporal");
-		instanceOf = new joint.shapes.ontouml.Relationship(); instanceOf.setStereotype("instanceOf");
 		this.map = { 
-			'Generalization': generalization, 
-			'Mediation': mediation, 
-			'Characerization': characterization, 
-			'Structuration': structuration,
-			'Formal': formal, 
-			'Material': material, 
-			'Derivation': derivation, 
-			'ComponentOf': componentOf,
-			'MemberOf': memberOf,
-			'SubCollectionOf': subCollectionOf, 
-			'SubQuantityOf': subQuantityOf,
-			'QuapartOf': quaPartOf, 
-			'Constitution': constitution, 
-			'Causation': causation,
-			'Participation': participation, 
-			'SubeventOf': subEventOf, 
-			'Temporal': temporal, 
-			'InstanceOf': instanceOf	
-		}		
-	};
+			'Generalization': 'joint.shapes.ontouml.Generalization', 
+			'Mediation': 'joint.shapes.ontouml.Relationship', 
+			'Characerization': 'joint.shapes.ontouml.Relationship', 
+			'Structuration': 'joint.shapes.ontouml.Relationship',
+			'Formal': 'joint.shapes.ontouml.Relationship', 
+			'Material': 'joint.shapes.ontouml.Relationship', 
+			'Derivation': 'joint.shapes.ontouml.Relationship', 
+			'ComponentOf': 'joint.shapes.ontouml.Relationship',
+			'MemberOf': 'joint.shapes.ontouml.Relationship',
+			'SubCollectionOf': 'joint.shapes.ontouml.Relationship', 
+			'SubQuantityOf': 'joint.shapes.ontouml.Relationship',
+			'QuapartOf': 'joint.shapes.ontouml.Relationship', 
+			'Constitution': 'joint.shapes.ontouml.Relationship', 
+			'Causation': 'joint.shapes.ontouml.Relationship',
+			'Participation': 'joint.shapes.ontouml.Relationship', 
+			'SubeventOf': 'joint.shapes.ontouml.Relationship', 
+			'Temporal': 'joint.shapes.ontouml.Relationship', 
+			'InstanceOf': 'joint.shapes.ontouml.Relationship'	
+		}	
+	};	
 }
 
 //=====================================================
@@ -123,7 +92,13 @@ function runningExample(canvas){
         source: { id: tree.id },
         target: { id: entity.id }
     });	
+	
 	canvas.getGraph().addCells([forest, tree, entity, color, link, link2, material]);
+	
+	var genSet = new joint.shapes.ontouml.GeneralizationSet();
+	genSet.setIsDisjoint(true);
+	genSet.setIsCovering(true);
+	canvas.getGraph().addCell(genSet);
 	
 	//var derivation = material.setTruthMaker(graph, forest.id)
 	//graph.addCells([derivation])

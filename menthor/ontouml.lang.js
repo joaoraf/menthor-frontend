@@ -1,5 +1,10 @@
 joint.shapes.ontouml = {};
 
+/** OntoUML Generalization Set */
+joint.shapes.ontouml.GeneralizationSet = joint.shapes.mcore.MGeneralizationSet.extend({
+	type: 'joint.shapes.ontouml.GeneralizationSet',	
+});
+
 /** OntoUML Generalization */
 joint.shapes.ontouml.Generalization = joint.shapes.mcore.MGeneralization.extend({
 	type: 'joint.shapes.ontouml.Generalization',	
@@ -128,7 +133,7 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 		
 		this.updateShape();
 		
-		//this.on('add change:.body', function() { this.updatePath(); }, this);
+		this.on('add change:vertices', function() { this.updatePath(); }, this);
 		
 		this.on('add change:stereotype',function() { this.updateStereotypeLabel(); this.updateShape(); }, this);
 		
@@ -137,7 +142,7 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
     },
 	
 	updatePath: function(){
-		alert("translating...")
+		
 	},
 	
 });

@@ -1,5 +1,49 @@
 joint.shapes.mcore = {};
 	
+joint.shapes.mcore.MGeneralizationSet = joint.shapes.basic.Rect.extend({
+	
+	defaults: joint.util.deepSupplement({
+        type: 'joint.shapes.mcore.MGeneralizationSet',
+        attrs: { 			
+			position: { x: 10, y: 10 },
+			size: { width: 50, height: 30 },
+			rect: { fill: 'white' }, 
+			text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, text: '' },
+		},
+		isDisjoint: false,
+		isCovering: false,
+		generalizations: []
+    }, joint.shapes.basic.Rect.prototype.defaults),
+	
+	setIsDisjoint: function(value){
+		this.set('isDisjoint',value)
+	},
+	
+	setIsCovering: function(value){
+		this.set('isCovering',value)
+	},
+	
+	isDisjoint: function(){
+		return this.get('isDisjoint');
+	},
+	
+	isCovering: function(){
+		return this.get('isCovering');
+	},
+	
+	initialize: function() {
+        joint.shapes.basic.Rect.prototype.initialize.apply(this, arguments);
+		this.on('add change:isCovering change:isDisjoint',function() { this.updateText(); }, this);			
+    },
+	
+	updateText: function(){
+		if(this.isDisjoint() && !this.isCovering()) this.get('attrs').text.text = "{disjoint}"
+		if(!this.isDisjoint() && this.isCovering()) this.get('attrs').text.text = "{covering}"
+		if(this.isDisjoint() && this.isCovering()) this.get('attrs').text.text = "{disjoint, covering}"
+		if(!this.isDisjoint() && !this.isCovering()) this.get('attrs').text.text = "{}"				
+	},
+});
+
 /** MGeneralization */
 joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
 	defaults: joint.util.deepSupplement({  
