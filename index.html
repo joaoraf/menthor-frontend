@@ -13,12 +13,14 @@
 	<link rel="stylesheet" href="draw2d/css/contextmenu.css" />
 	<script src="draw2d/lib/jquery.contextmenu.js"></script>
     
-	<!-- Menthor Editor API -->
-	<link rel="stylesheet" href="menthor-editor/editor.css" />
-	<script src="menthor-editor/editor.js"></script>
+	<!-- Menthor Editor API -->	
+	<script src="menthor-editor/common.js"></script>
 	<script src="menthor-editor/mcore.js"></script>
+	<link rel="stylesheet" href="menthor-editor/mcore-editor.css" />
+	<script src="menthor-editor/mcore-editor.js"></script>	
 	<script src="menthor-editor/ontouml.js"></script>
-		
+	<script src="menthor-editor/ontouml-editor.js"></script>
+	
 </head>
 
 <body>
@@ -48,48 +50,44 @@
 	</div>
     
 	<script type="text/javascript">
+		
+	var pallete = new OntoUMLPallete();	
+	pallete.installOn("pallete");
 	
-	var tools = new joint.dia.Graph;
-	var pallete = new joint.dia.Paper({
-		el: $('#pallete'),
-		width: $("#pallete").width(),
-		height: $("#pallete").height(),
-		gridSize: 1,
-		interactive: false,
-		model: tools
-	});
-	allowDnDOnPallete(pallete);
-	_.each(palleteElements(), function(c) { tools.addCell(c); });
-   
 	graph = new joint.dia.Graph;
+	pallete.enableDnd(graph);
+	
 	canvas = new joint.dia.Paper({
 		el: $('#canvas'),
 		width: $("#diagram").width()*2,
 		height: $("#diagram").height()*2,
-		defaultLink: new joint.shapes.ontouml.Relationship,
 		gridSize: 1,
-		model: graph,
-		labelMove:true,
+		model: graph,		
+		
+		//switch creating vertices with single click to double click
+		linkView: joint.dia.LinkView.extend({
+			pointerdblclick: function(evt, x, y) {
+				if (V(evt.target).hasClass('connection') || V(evt.target).hasClass('connection-wrap')) {
+					this.addVertex({ x: x, y: y });
+				}
+			}
+		}),
+		interactive: function(cellView) {
+			if (cellView.model instanceof joint.dia.Link) {
+				// Disable the default vertex add functionality on pointerdown.
+				return { vertexAdd: false };
+			}
+			return true;
+		}
 	});	
+	forbidDroppingLinksOnCanvas(canvas);
 	
 	allowSelecting(graph, canvas);
 	allowEditing(graph, canvas);
+	allowRightClickMenus(graph, canvas);
 	
-	//this overrides right click on canvas.
-	/*
-	canvas.$el.on('contextmenu', function(evt) { 
-		evt.stopPropagation(); // Stop bubbling so that the paper does not handle mousedown.
-		evt.preventDefault();  // Prevent displaying default browser context menu.
-		var cellView = canvas.findView(evt.target);
-		if (cellView) {
-		   // The context menu was brought up when clicking a cell view in the paper.
-		   console.log(cellView.model.id);  // So now you have access to both the cell view and its model.
-		   // ... display custom context menu, ...
-		}
-	})
-	*/
-	
-	forbidDroppingLinksOnCanvas(canvas);
+	var sugg = new OntoUMLConnSuggestions();
+	sugg.install(graph, canvas);
 	
 	//example
 	runningExample(graph);

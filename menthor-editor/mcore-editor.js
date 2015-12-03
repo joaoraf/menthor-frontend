@@ -1,64 +1,143 @@
 //=====================================================
-//Pallete
+//Base Pallete
 //=====================================================
 
-function palleteElements(){
-	var kind = createClass(joint.shapes.ontouml.Class,'Kind','kind',10,10);	
-	var collective = createClass(joint.shapes.ontouml.Class,'Collective','collective', 110, 10);		
-	var quantity = createClass(joint.shapes.ontouml.Class,'Quantity','quantity', 10, 60);					
-	var relator = createClass(joint.shapes.ontouml.Class,'Relator','relator', 110, 60);	
-	var mode = createClass(joint.shapes.ontouml.Class,'Mode','mode', 10, 110);		
-	var quality = createClass(joint.shapes.ontouml.Class,'Quality','quality', 110, 110);			
-	var subkind = createClass(joint.shapes.ontouml.Class,'SubKind','subkind', 10, 160 );	
-	var role = createClass(joint.shapes.ontouml.Class,'Role','role', 110, 160);		
-	var phase = createClass(joint.shapes.ontouml.Class,'Phase','phase',10, 210);		
-	var category = createClass(joint.shapes.ontouml.Class,'Category','category', 110, 210);	
-	var roleMixin = createClass(joint.shapes.ontouml.Class,'RoleMixin','roleMixin',10, 260);		
-	var phaseMixin = createClass(joint.shapes.ontouml.Class,'PhaseMixin','phaseMixin',110, 260);	
-	var mixin = createClass(joint.shapes.ontouml.Class,'Mixin','mixin',10, 310);	
-	var event = createClass(joint.shapes.ontouml.Class,'Event','event',110, 310);	
-	var highorder = createClass(joint.shapes.ontouml.Class,'HighOrder','highorder',10, 360);	
-	return [kind, collective, quantity, relator, mode, quality, subkind, role, phase,category, roleMixin, phaseMixin, mixin, event, highorder];
-}
-
-function createClass(classe, name, stereotype, x, y) {
-	return new classe({
-		position: { x: x  , y: y },
-		name: name,
-		stereotype,
-	});
-}
-
-function allowDnDOnPallete(pallete){
-	pallete.on('cell:pointerdown', function(cellView, evt, x, y){		
-		var fake = $("<div class='dnd'><div id='dnd'></div></div>").appendTo("body").css("left", x+"px").css("top", y+"px");		
-		var fakeElem = createClass(eval(cellView.model.get("type")), cellView.model.get("name"), cellView.model.get("stereotype"), 0, 0);
-		var fakeGraph = new joint.dia.Graph;
-		var fakePaper = new joint.dia.Paper({
-			el: $('#dnd'),
-			width: fakeElem.getWidth(),
-			height: fakeElem.getHeight(),
+function Pallete(){
+	
+	this.language = "MCore";
+	this.graph = null;
+	this.paper = null;
+	
+	this.installOn = function(htmlElemId){		
+		this.graph = new joint.dia.Graph;
+		this.paper = new joint.dia.Paper({
+			el: $('#'+htmlElemId),	
+			width: $("#"+htmlElemId).width(),
+			height: $("#"+htmlElemId).height(),
 			gridSize: 1,
-			model: fakeGraph
-		}); 		
-		fakeGraph.addCell(fakeElem);
-		$("body").mousemove(function(evt){
-			fake.css("left", (evt.pageX-45)+"px").css("top", (evt.pageY-30)+"px");
+			interactive: false,
+			model: this.graph
+		});	
+		this.graph.addCells(this.elements());
+	};
+	
+	this.elements = function(){
+		var class_ = this.createElement(joint.shapes.mcore.MClass,'Class',10,10,null);
+		var dataType = this.createElement(joint.shapes.mcore.MDataType,'DataType',110, 10, null);	
+		return [class_, dataType]
+	};
+		
+	this.createElement = function (class_, name, x, y, stereotype) {
+		return new class_({
+			position: { x: x  , y: y },
+			name: name,
+			stereotype,
 		});
-		$("body").mouseup(function(evt) {
-			if(evt.pageX-$("#tools").width()-40 > 0){//if we are on target paper (canvas) we add the new element {
-				var elem = createClass(eval(cellView.model.get("type")), cellView.model.get("name"), cellView.model.get("stereotype"), evt.pageX-$("#tools").width()-40, evt.pageY-40);				
-				graph.addCell(elem);
-				$("body").unbind("mousemove");
-				$("body").unbind("mouseup");			    	
-			}
-			fake.remove();
-		});		
-	 });
+	};
+	
+	this.enableDnd = function(diagramGraph){
+		this.paper.on('cell:pointerdown', (function(cellView, evt, x, y){		
+			var fake = $("<div class='dnd'><div id='dnd'></div></div>").appendTo("body").css("left", x+"px").css("top", y+"px");	
+			var fakeElem = this.createElement(eval(cellView.model.get("type")), cellView.model.get("name"), 0, 0, cellView.model.get("stereotype"));
+			var fakeGraph = new joint.dia.Graph;
+			var fakePaper = new joint.dia.Paper({
+				el: $('#dnd'),
+				width: fakeElem.getWidth(),
+				height: fakeElem.getHeight(),
+				gridSize: 1,
+				model: fakeGraph
+			}); 		
+			fakeGraph.addCell(fakeElem);
+			$("body").mousemove(function(evt){
+				fake.css("left", (evt.pageX-45)+"px").css("top", (evt.pageY-30)+"px");
+			});
+			$("body").mouseup((function(evt) {
+				if(evt.pageX-$("#tools").width()-40 > 0){//if we are on target paper (canvas) we add the new element {
+					var elem = this.createElement(eval(cellView.model.get("type")), cellView.model.get("name"), evt.pageX-$("#tools").width()-40, evt.pageY-40, cellView.model.get("stereotype"));				
+					diagramGraph.addCell(elem);
+					$("body").unbind("mousemove");
+					$("body").unbind("mouseup");			    	
+				}
+				fake.remove();
+			}).bind(this));		
+		 }).bind(this));
+	};
 }
- 
+
 //=====================================================
-//Edition
+//Base Connections Suggestion
+//=====================================================
+
+function ConnSuggestions(){
+		
+	this.language = "MCore"
+	this.map = {};
+	
+	this.defaultConnections = function(){
+		this.map = { 'Generalization': new joint.shapes.mcore.MGeneralization(), 'Relationship': new joint.shapes.mcore.MRelationship()}
+	};
+	
+	this.install = function(diagramGraph, diagramPaper){
+		this.defaultConnections();
+		$(".connect").mousedown((function(evt){
+			evt.preventDefault();
+			evt.stopPropagation();
+			var xPos = evt.clientX;
+			var yPos = evt.clientY;	
+			var menuItems = {};
+			for(key in this.map){
+				var k = (String(key)).toLowerCase()
+				menuItems[k] = {name: String(key)}
+			}
+			$.contextMenu({
+				selector: '.contextmenu', 
+				events: {  
+					 hide:function(){ $.contextMenu( 'destroy' ); }
+				},
+				callback: $.proxy((function(key, options) {                         
+					if(key!=null && key!=""){	
+						var link = this.map[menuItems[key].name]
+						dndLink(evt,diagramGraph,diagramPaper,link);											
+					}
+				}).bind(this)),
+				items: menuItems
+			});	
+			$('.contextmenu').contextMenu({x: xPos, y: yPos});
+			
+		}).bind(this));	
+	};
+		
+	var dndLink = function(evt, graph, paper, link){
+		var cell = graph.getCell(allowSelecting.selectedElement.model.get("id"));	
+		link.set("source", {
+			id: allowSelecting.selectedElement.model.get("id")
+		});
+		link.set("target", paper.snapToGrid({
+			x: evt.clientX,
+			y: evt.clientY
+		}));			
+		graph.addCell(link, {
+			validation: false
+		});
+		var linkView = paper.findViewByModel(link);
+		linkView.startArrowheadMove("target");
+		$("body").mouseup(function(evt){		
+			linkView.pointerup(evt);
+			$("body").unbind();
+		});
+		$("body").mousemove(function(evt){
+			var coords = paper.snapToGrid({
+				x: evt.clientX,
+				y: evt.clientY
+			});
+			linkView.pointermove(evt, coords.x, coords.y)
+		});
+		$("#editor").hide();
+	};
+}
+
+//=====================================================
+//Base Edition
 //=====================================================
 
 allowEditing.lastEvent = null
@@ -67,7 +146,6 @@ function allowEditing(graph, paper){
 	allowDeletions(graph)
 	allowDuplicates(graph)
 	allowResizing(graph)
-	allowConnecting(graph, paper)
 }
 
 function allowResizing(graph){
@@ -93,7 +171,7 @@ function updateEditor(cell) {
 }
 
 //=====================================================
-//Selection
+//Base Selection
 //=====================================================
 
 //'static' property of selections
@@ -126,7 +204,7 @@ function allowSelecting(graph, paper){
 }
 
 //=====================================================
-//Auxiliary methods...
+//Base methods
 //=====================================================
 
 function disallowInteractionsOnLinks(graph, canvas){
@@ -396,135 +474,22 @@ function allowDuplicates(graph){
 	});
 }	
 
-function openConnectContextMenu(evt, graph, paper){
-	$.contextMenu({
-		 selector: '.contextmenu', 
-		 events: {  
-			 hide:function(){ $.contextMenu( 'destroy' ); }
-		 },
-		 callback: $.proxy(function(key, options) {                         
-			if(key!=null && key!=""){
-				if(key!="generalization") {
-					var rel = new joint.shapes.ontouml.Relationship();
-					rel.setStereotype(key);
-					dragAndDropLink(evt,graph,paper,rel)
-					return rel;
-				}else{
-					var gen = new joint.shapes.ontouml.Generalization();
-					dragAndDropLink(evt,graph,paper,gen)
-				}
-			}
-         }),
-		 items:{
-			"generalization": {name: "Generalization"},
-			"sep0":  "------------------",
-			"mediation": {name: "Mediation"},
-			"characerization": {name: "Characterization"},
-			"structuration": {name: "Structuration"},
-			"sep1":  "------------------",
-			"formal": {name: "Formal"},
-			"material": {name: "Material"},
-			"derivation": {name: "Derivation"},
-			"sep2":  "------------------",
-			"componentOf": {name: "ComponentOf"},
-			"memberOf": {name: "MemberOf"},
-			"subcollectionOf": {name: "SubCollectionOf"},
-			"subquantityOf": {name: "SubQuantityOf"},
-			"quapartOf": {name: "QuaPartOf" },
-			"constitution": {name: "Constitution" },
-			"sep3":  "------------------",
-			"causation": {name: "Causation" },
-			"participation": {name: "Participation" },
-			"subeventOf": {name: "SubEventOf" },
-			"temporal": {name: "Temporal" },
-			"sep4":  "------------------",
-			"instanceOf": {name: "InstanceOf" },
-		 }
-	 });			
-	 var xPos = evt.clientX;
-	 var yPos = evt.clientY;
-	 $('.contextmenu').contextMenu({x: xPos, y: yPos});
+//=====================================================
+//Right Click Context Menus
+//=====================================================
+
+function allowRightClickMenus(graph, paper){
+	paper.$el.on('contextmenu', function(evt) { 
+		evt.stopPropagation(); // Stop bubbling so that the paper does not handle mousedown.
+		evt.preventDefault();  // Prevent displaying default browser context menu.
+		var cellView = canvas.findView(evt.target);
+		if (cellView) {
+		   // The context menu was brought up when clicking a cell view in the paper.
+		   console.log(cellView.model.id);  // So now you have access to both the cell view and its model.
+		   if(cellView.model instanceof joint.dia.Link){
+				//context menu for line style
+		   }
+		}
+	})	
 }
 
-function dragAndDropLink(evt, graph, paper, link){
-	var cell = graph.getCell(allowSelecting.selectedElement.model.get("id"));	
-	link.set("source", {
-		id: allowSelecting.selectedElement.model.get("id")
-	});
-	link.set("target", paper.snapToGrid({
-		x: evt.clientX,
-		y: evt.clientY
-	}));			
-	graph.addCell(link, {
-		validation: false
-	});
-	var linkView = paper.findViewByModel(link);
-	linkView.startArrowheadMove("target");
-	$("body").mouseup(function(evt){		
-		linkView.pointerup(evt);
-		$("body").unbind();
-	});
-	$("body").mousemove(function(evt){
-		var coords = paper.snapToGrid({
-			x: evt.clientX,
-			y: evt.clientY
-		});
-		linkView.pointermove(evt, coords.x, coords.y)
-	});
-	$("#editor").hide();
-}
-
-function allowConnecting(graph, paper){
-	$(".connect").mousedown(function(evt){
-		evt.preventDefault();
-		evt.stopPropagation();
-		openConnectContextMenu(evt, graph, paper);		
-	});	
-}
-
-function runningExample(graph){
-	var forest = new joint.shapes.ontouml.Class({	
-        name: 'Forest',
-		stereotype:'collective',
-        attributes: ['name: String'],
-        position: { x: 100, y: 130 }
-    });
-
-	var tree = new joint.shapes.ontouml.Class({	
-        name: 'Tree',
-		stereotype:'kind',
-        position: { x: 400, y: 140 }
-    });
-	
-	var entity = new joint.shapes.ontouml.Class({	
-        name: 'Entity',
-		stereotype: 'category',       
-        position: { x: 380, y: 50 }
-    });
-	
-	var color = new joint.shapes.ontouml.DataType({	
-        name: 'Color',
-		stereotype: 'quality',       
-        position: { x: 530, y: 50 }
-    });
-	
-	var link = new joint.shapes.ontouml.Relationship({
-        source: { id: forest.id },
-        target: { id: tree.id },
-		stereotype: 'memberOf',
-    });
-	
-	var material = new joint.shapes.ontouml.Relationship({
-        source: { id: color.id },
-        target: { id: tree.id },
-		stereotype: 'material',
-    });
-	//var derivation = material.setTruthMaker(graph, forest.id)
-	
-    var link2 = new joint.shapes.ontouml.Generalization({
-        source: { id: tree.id },
-        target: { id: entity.id }
-    });
-	
-	graph.addCells([forest, tree, entity, color, link, link2, material]);
-}

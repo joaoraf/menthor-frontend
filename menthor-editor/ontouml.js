@@ -68,7 +68,7 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 		this.label(3, {
             position: 0.5,
             attrs: {
-                rect: { fill: '#D3D3D3' }, text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getStereotype() }
+                rect: { fill: 'white' }, text: { dy: 10, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getStereotype() }
             },
         });		
 	},
@@ -88,12 +88,11 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 		this.label(4, {
             position: 0.5,
             attrs: {
-                rect: { fill: '#D3D3D3' }, text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getMetaAttributesLabelName() }
+                rect: { fill: 'white' }, text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getMetaAttributesLabelName() }
             },
         });	
 	},
 	
-	//not working... 	
 	midpoint: function(graph){
 		var srcCenter = graph.getCell(this.get('source').id).getBBox().center();		
         var trgCenter = graph.getCell(this.get('target').id).getBBox().center();
@@ -124,7 +123,7 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 			this.attr('.connection', { 'stroke-dasharray': '5,5' });		
 			this.attr('.marker-target', { d: 'M-5,0a5,5 0 1,0 10,0a5,5 0 1,0 -10,0', fill: color});					
 		} else if(this.getStereotypeName().toLowerCase=='material'){
-			
+			setTruthMaker(null);
 		}	
 	},
 	
@@ -134,7 +133,7 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 		
 		this.updateShape();
 		
-		this.on('add change:size', function() { this.updatePath(); }, this);
+		//this.on('add change:.body', function() { this.updatePath(); }, this);
 		
 		this.on('add change:stereotype',function() { this.updateStereotypeLabel(); this.updateShape(); }, this);
 		
@@ -143,9 +142,7 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
     },
 	
 	updatePath: function(){
-		if(this.derivation!=null){
-			//alert("changing size")
-		}
+		alert("translating...")
 	},
 	
 });

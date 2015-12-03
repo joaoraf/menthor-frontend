@@ -3,12 +3,13 @@ joint.shapes.mcore = {};
 /** MCanvas */
 joint.shapes.mcore.MCanvas = joint.dia.Paper.extend({
 
+	
 });
 
 /** MGeneralization */
 joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
 	defaults: joint.util.deepSupplement({  
-		type: 'mcore.MGeneralization',
+		type: 'joint.shapes.mcore.MGeneralization',
 		attrs: { '.marker-target': { d: 'M 18 0 L 0 10 L 18 18 z', fill: 'white' }}		
 	}, joint.shapes.uml.Association.prototype.defaults),
 	
@@ -20,7 +21,7 @@ joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
 /** MRelationship */
 joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
     defaults: joint.util.deepSupplement({ 		
-		type: 'mcore.MRelationship',
+		type: 'joint.shapes.mcore.MRelationship',
 		labels: [],
 		name: [],
 		sourceMultiplicity: "1",	
@@ -133,7 +134,7 @@ joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
 		this.label(0, {
             position: 0.5,
             attrs: {
-                rect: { fill: '#D3D3D3' }, text: { dy:10, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getName() }
+                rect: { fill: 'white' }, text: { dy:-7.5, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getName() }
             },
         });				
 	},
@@ -144,13 +145,13 @@ joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
 		this.label(1, {
 			position: -15-offset,
 			attrs: {
-				rect: { fill: '#D3D3D3' }, text: { dy:10, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getSourceFullLabelName() }
+				rect: { fill: 'white' }, text: { 'dy':-7.5, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getSourceFullLabelName() }
 			}
 		});	    	
 		this.label(2, {
 			position: 15+offset,
 			attrs: {
-				rect: { fill: '#D3D3D3' }, text: { dy:10, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getTargetFullLabelName() }
+				rect: { fill: 'white' }, text: { 'dy':-7.5, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getTargetFullLabelName() }
 			}
 		});		
 	},
@@ -160,8 +161,8 @@ joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
 joint.shapes.mcore.MType = joint.shapes.uml.Class.extend({
 
     defaults: joint.util.deepSupplement({
-        type: 'mcore.MType',			
-        size: { width: 90, height: 40 },
+        type: 'joint.shapes.mcore.MType',			
+        size: { width: 95, height: 40 },
         attrs: {	
 			magnet: true,
             '.uml-class-name-rect': { 'stroke-width': 2, 'fill': '#FFFFFF' },
@@ -241,10 +242,10 @@ joint.shapes.mcore.MType = joint.shapes.uml.Class.extend({
 
 /** MClass */
 joint.shapes.mcore.MClass = joint.shapes.mcore.MType.extend({
-	type: 'mcore.MClass',
+	type: 'joint.shapes.mcore.MClass',
 });
 
 /** MDataType */
 joint.shapes.mcore.MDataType = joint.shapes.mcore.MType.extend({
-	type: 'mcore.MDataType',
+	type: 'joint.shapes.mcore.MDataType',
 });
