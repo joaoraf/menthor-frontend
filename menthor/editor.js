@@ -112,9 +112,9 @@ function ConnSuggestions(){
 	};
 		
 	var dndLink = function(evt, graph, paper, link){
-		var cell = graph.getCell(Edition.selectedElement.model.get("id"));	
+		var cell = graph.getCell(Edition.selection.get(0).model.get("id"));	
 		link.set("source", {
-			id: Edition.selectedElement.model.get("id")
+			id: Edition.selection.get(0).model.get("id")
 		});
 		link.set("target", paper.snapToGrid({
 			x: evt.clientX,
@@ -147,7 +147,15 @@ function ConnSuggestions(){
 function Edition(){
 		
 	Edition.lastEvent = null;
-	Edition.selectedElement = null;
+	Edition.selection = [];
+	
+	this.firstSelected = function(){
+		return Edition.selection[0];
+	};
+	
+	this.lastSelected = function(){
+		return Edition.selection[Edition.selection.length-1];
+	};
 	
 	this.installOn = function (canvas){
 		this.allowSelecting(canvas.getGraph(),canvas.getPaper())
@@ -165,33 +173,40 @@ function Edition(){
 	
 	/** Setup the selection/edition box which envolves the element and allows editions like resizing, connections and etc. */
 	this.allowSelecting = function(graph, paper){	
+	
 		paper.on('cell:pointerclick', (function(cellView, evt, x, y){
-			if(cellView.model instanceof joint.shapes.mcore.MType){			
-				Edition.selectedElement = cellView;			
-				console.log("Selected: "+Edition.selectedElement)			
-				this.updateEditionBox(Edition.selectedElement);
-			}		
+			if(cellView.model instanceof joint.shapes.mcore.MType){
+				if (!(evt.ctrlKey || evt.metaKey)) Edition.selection = []; 
+				Edition.selection.push(cellView);				
+				console.log("Selected: "+cellView);				
+				this.updateEditionBox(cellView);									
+			}
 		}).bind(this));
+		
 		paper.on('blank:pointerdown', (function(cellView, evt, x, y){
-			Edition.selectedElement = null;
+			Edition.selection = [];
 			$("#editor").hide();
 		}).bind(this));
+		
 		paper.on('cell:pointermove', (function(cellView, evt, x, y){
 			if(cellView.model instanceof joint.shapes.mcore.MType){
-				if(Edition.selectedElement==null) {
-					Edition.selectedElement = cellView;
-					console.log("Selected: "+Edition.selectedElement)
+				if(Edition.selection.length==0) {
+					Edition.selection.push(cellView);
+					console.log("Selected: "+cellView)
 				}
+				//_.each(Edition.selection, function(element, x, y){
+				//	if(element!=cellView) { element.model.set('position').x = x; element.model.set('position').y=y; }
+				//});
 				this.updateEditionBox(cellView);
 			}else{
 				$("#editor").hide();
 			}
 		}).bind(this));	
 	};
-	
+				
 	this.updateEditionBox = function(cell) {
 		var currentScale = 1;
-		if(cell != null){		
+		if(cell != null){
 			$("#editor").css("top", ($("#"+cell.id).offset().top-2+$("#diagram").scrollTop())+"px");
 			$("#editor").css("left", ($("#"+cell.id).offset().left-$("#diagram").offset().left-2+$("#diagram").scrollLeft())+"px");		
 			$("#editor").width((cell.model.get("size").width+2)*currentScale);
@@ -200,26 +215,39 @@ function Edition(){
 		}	
 	};
 	
-	this.allowDeletions = function(graph){
-		$(".delete").mousedown(function(evt){
-			evt.preventDefault();
-			evt.stopPropagation();	
-			console.log("Delete: "+Edition.selectedElement)		
-			graph.getCell(Edition.selectedElement.model.get("id")).remove();
-			$("#editor").hide();
+	this.removeSelected = function(graph){
+		_.each(Edition.selection, function(element){
+			var cell = graph.getCell(element.model.get("id"));
+			cell.remove();
+			console.log("Deleted: "+cell);
 		});
+		$("#editor").hide();
+	};
+	
+	this.allowDeletions = function(graph){
+		$(".delete").mousedown((function(evt){
+			evt.preventDefault();
+			evt.stopPropagation();				
+			this.removeSelected(graph);			
+		}).bind(this));
 	};
 
+	this.duplicateSelected = function(graph){
+		_.each(Edition.selection, function(element){			
+			var newCell = graph.getCell(element.model.get("id")).clone();
+			graph.addCell(newCell);
+			console.log("Duplicated	: "+newCell)
+			newCell.translate(10, 10);
+		});
+		$("#editor").hide();
+	};
+	
 	this.allowDuplicates = function(graph){
-		$(".duplicate").mousedown(function(evt){
+		$(".duplicate").mousedown((function(evt){
 			evt.preventDefault();
 			evt.stopPropagation();
-			console.log("Duplicate	: "+Edition.selectedElement)
-			var newCell = graph.getCell(Edition.selectedElement.model.get("id")).clone();
-			graph.addCell(newCell);
-			newCell.translate(10, 10);
-			$("#editor").hide();
-		});
+			this.duplicateSelected(graph);
+		}).bind(this));
 	};
 	
 	this.allowResizingNorth = function(graph){
@@ -233,13 +261,13 @@ function Edition(){
 			});
 			$("body").mousemove((function(evt) {
 				if(Edition.lastEvent != null){
-					var cell = graph.getCell(Edition.selectedElement.model.get("id"));
+					var cell = graph.getCell(this.firstSelected().model.get("id"));
 					var view = $("#"+Edition.selectedElement.id);
 					var step = Math.abs(Edition.lastEvent.pageY-evt.pageY) > 10?(Edition.lastEvent.pageY-evt.pageY > 0?10:-10):Edition.lastEvent.pageY-evt.pageY;
 					if(cell.get("size").height > 10 || step > 0){
 						cell.translate(0, -(step));
 						cell.resize(cell.get("size").width, cell.get("size").height+(step));
-						this.updateEditionBox(Edition.selectedElement);
+						this.updateEditionBox(this.firstSelected());
 					}
 				}
 				Edition.lastEvent = evt;
@@ -258,11 +286,11 @@ function Edition(){
 			});
 			$("body").mousemove((function(evt) {
 				if(Edition.lastEvent != null){
-					var cell = graph.getCell(Edition.selectedElement.model.get("id"));
+					var cell = graph.getCell(this.firstSelected().model.get("id"));
 					var step = Math.abs(Edition.lastEvent.pageY-evt.pageY) > 10?(Edition.lastEvent.pageY-evt.pageY > 0?10:-10):Edition.lastEvent.pageY-evt.pageY;
 					if(cell.get("size").height > 10 || step < 0){
 						cell.resize(cell.get("size").width, cell.get("size").height-(step));
-						this.updateEditionBox(Edition.selectedElement);
+						this.updateEditionBox(this.firstSelected());
 					}
 				}
 				Edition.lastEvent = evt;
@@ -281,12 +309,12 @@ function Edition(){
 			});
 			$("body").mousemove((function(evt){
 				if(Edition.lastEvent != null){
-					var cell = graph.getCell(Edition.selectedElement.model.get("id"));
+					var cell = graph.getCell(this.firstSelected().model.get("id"));
 					var step = Math.abs(Edition.lastEvent.pageX-evt.pageX) > 10?(Edition.lastEvent.pageX-evt.pageX > 0?10:-10):Edition.lastEvent.pageX-evt.pageX;			
 					if(cell.get("size").width > 10 || step > 0){
 						cell.translate(-(step), 0);
 						cell.resize(cell.get("size").width+(step), cell.get("size").height);
-						this.updateEditionBox(Edition.selectedElement);
+						this.updateEditionBox(this.firstSelected());
 					}
 				}
 				Edition.lastEvent = evt;
@@ -305,11 +333,11 @@ function Edition(){
 			});
 			$("body").mousemove((function(evt){
 				if(Edition.lastEvent != null){
-					var cell = graph.getCell(Edition.selectedElement.model.get("id"));
+					var cell = graph.getCell(this.firstSelected().model.get("id"));
 					var step = Math.abs(Edition.lastEvent.pageX-evt.pageX) > 10?(Edition.lastEvent.pageX-evt.pageX > 0?10:-10):Edition.lastEvent.pageX-evt.pageX;				
 					if(cell.get("size").width > 10 || step < 0){
 						cell.resize(cell.get("size").width-(step), cell.get("size").height);
-						this.updateEditionBox(Edition.selectedElement);
+						this.updateEditionBox(this.firstSelected());
 					}
 				}
 				Edition.lastEvent = evt;
@@ -328,7 +356,7 @@ function Edition(){
 			});
 			$("body").mousemove((function(evt){
 				if(Edition.lastEvent != null){
-					var cell = graph.getCell(Edition.selectedElement.model.get("id"));
+					var cell = graph.getCell(this.firstSelected().model.get("id"));
 					var stepX = Math.abs(Edition.lastEvent.pageX-evt.pageX) > 10?(Edition.lastEvent.pageX-evt.pageX > 0?10:-10):Edition.lastEvent.pageX-evt.pageX;
 					var stepY = Math.abs(Edition.lastEvent.pageY-evt.pageY) > 10?(Edition.lastEvent.pageY-evt.pageY > 0?10:-10):Edition.lastEvent.pageY-evt.pageY;				
 					if(cell.get("size").width > 10 || stepX < 0){
@@ -337,7 +365,7 @@ function Edition(){
 					if(cell.get("size").height > 10 || stepY < 0){
 						cell.resize(cell.get("size").width, cell.get("size").height-(stepY));						
 					}
-					this.updateEditionBox(Edition.selectedElement);
+					this.updateEditionBox(this.firstSelected());
 				}
 				Edition.lastEvent = evt;
 			}).bind(this));
@@ -355,7 +383,7 @@ function Edition(){
 			});
 			$("body").mousemove((function(evt){
 				if(Edition.lastEvent != null){
-					var cell = graph.getCell(Edition.selectedElement.model.get("id"));
+					var cell = graph.getCell(this.firstSelected().model.get("id"));
 					var stepX = Math.abs(Edition.lastEvent.pageX-evt.pageX) > 10?(Edition.lastEvent.pageX-evt.pageX > 0?10:-10):Edition.lastEvent.pageX-evt.pageX;
 					var stepY = Math.abs(Edition.lastEvent.pageY-evt.pageY) > 10?(Edition.lastEvent.pageY-evt.pageY > 0?10:-10):Edition.lastEvent.pageY-evt.pageY;				
 					if(cell.get("size").width > 10 || stepX > 0){
@@ -365,7 +393,7 @@ function Edition(){
 					if(cell.get("size").height > 10 || stepY < 0){
 						cell.resize(cell.get("size").width, cell.get("size").height-stepY);
 					}
-					this.updateEditionBox(Edition.selectedElement);
+					this.updateEditionBox(this.firstSelected());
 				}
 				Edition.lastEvent = evt;
 			}).bind(this));
@@ -383,7 +411,7 @@ function Edition(){
 			});
 			$("body").mousemove((function(evt){
 				if(Edition.lastEvent != null){
-					var cell = graph.getCell(Edition.selectedElement.model.get("id"));
+					var cell = graph.getCell(this.firstSelected().model.get("id"));
 					var stepX = Math.abs(Edition.lastEvent.pageX-evt.pageX) > 10?(Edition.lastEvent.pageX-evt.pageX > 0?10:-10):Edition.lastEvent.pageX-evt.pageX;
 					var stepY = Math.abs(Edition.lastEvent.pageY-evt.pageY) > 10?(Edition.lastEvent.pageY-evt.pageY > 0?10:-10):Edition.lastEvent.pageY-evt.pageY;				
 					if(cell.get("size").width > 10 || stepX > 0){
@@ -394,7 +422,7 @@ function Edition(){
 						cell.translate(0, -(stepY));
 						cell.resize(cell.get("size").width, cell.get("size").height+(stepY));
 					}
-					this.updateEditionBox(Edition.selectedElement);
+					this.updateEditionBox(this.firstSelected());
 				}
 				Edition.lastEvent = evt;
 			}).bind(this));
@@ -412,7 +440,7 @@ function Edition(){
 			});
 			$("body").mousemove((function(evt){
 				if(Edition.lastEvent != null){
-					var cell = graph.getCell(Edition.selectedElement.model.get("id"));
+					var cell = graph.getCell(this.firstSelected().model.get("id"));
 					var stepX = Math.abs(Edition.lastEvent.pageX-evt.pageX) > 10?(Edition.lastEvent.pageX-evt.pageX > 0?10:-10):Edition.lastEvent.pageX-evt.pageX;
 					var stepY = Math.abs(Edition.lastEvent.pageY-evt.pageY) > 10?(Edition.lastEvent.pageY-evt.pageY > 0?10:-10):Edition.lastEvent.pageY-evt.pageY;				
 					if(cell.get("size").width > 10 || stepX < 0){
@@ -422,7 +450,7 @@ function Edition(){
 						cell.translate(0, -(stepY));
 						cell.resize(cell.get("size").width, cell.get("size").height+(stepY));
 					}
-					this.updateEditionBox(Edition.selectedElement);
+					this.updateEditionBox(this.firstSelected());
 				}
 				Edition.lastEvent = evt;
 			}).bind(this));
@@ -513,12 +541,37 @@ function Canvas(htmlElemId){
 //Right Click Context Menus
 //=====================================================
 
+function treeStyleSubMenuActions(key, cellView, graph){
+	if(key!=null && key!=""){
+		if(key==="manhatan") cellView.model.set('router', { name: 'manhattan' });
+		if(key==="metro") cellView.model.set('router', { name: 'metro' });
+		if(key==="orthogonal") cellView.model.set('router', { name: 'orthogonal' });
+		if(key==="verticaltree") verticalTreeRouter(graph, cellView); 
+		if(key==="horizontaltree") horizontalTreeRouter(graph, cellView);
+		if(key==="direct") cellView.model.set('vertices',{});
+	}
+}
+
+function treeStyleSubMenuItems(){
+	return {
+        "name": "Tree Style", 
+        "items": {
+		   "direct": {name: "Direct"},
+			"verticaltree": {name: "Vertical Tree" }, 
+			"horizontaltree": {name: "Horizontal Tree" },
+			"orthogonal" : {name: "Orthogonal"}, 
+			"manhatan": {name: "Manhatan"}, 
+			"metro": {name: "Metro"}
+		}	  
+    }	
+}
+
 function allowRightClickMenus(graph, paper){
 	paper.$el.on('contextmenu', function(evt) { 
 		evt.stopPropagation(); 
 		evt.preventDefault();  
 		var cellView = paper.findView(evt.target);
-		if (cellView) {		   
+		if (cellView) {
 		   console.log(cellView.model.id);
 		   if(cellView.model instanceof joint.dia.Link){
 				$.contextMenu({
@@ -527,22 +580,11 @@ function allowRightClickMenus(graph, paper){
 						 hide:function(){ $.contextMenu( 'destroy' ); }
 					},
 					callback: $.proxy((function(key, options) {                         
-						if(key!=null && key!=""){
-							if(key==="manhatan") cellView.model.set('router', { name: 'manhattan' });
-							if(key==="metro") cellView.model.set('router', { name: 'metro' });
-							if(key==="orthogonal") cellView.model.set('router', { name: 'orthogonal' });
-							if(key==="verticaltree") verticalTreeRouter(graph, cellView); 
-							if(key==="horizontaltree") horizontalTreeRouter(graph, cellView);
-							if(key==="direct") cellView.model.set('vertices',{});
-						}
+						treeStyleSubMenuActions(key, cellView, graph);
 					}).bind(this)),
 					items: { 
-						"direct": {name: "Direct"},
-						"verticaltree": {name: "Vertical Tree" }, 
-						"horizontaltree": {name: "Horizontal Tree" },
-						"orthogonal" : {name: "Orthogonal"}, 
-						"manhatan": {name: "Manhatan"}, 
-						"metro": {name: "Metro"}}
+						"fold1a": treeStyleSubMenuItems()						
+					}
 				});	
 				$('.contextmenu').contextMenu({x: evt.clientX, y: evt.clientY});
 		   }
