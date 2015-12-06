@@ -100,6 +100,5 @@ function runningExample(canvas){
 	genSet.setIsCovering(true);
 	canvas.getGraph().addCell(genSet);
 	
-	//var derivation = material.setTruthMaker(graph, forest.id)
-	//graph.addCells([derivation])
+	material.setTruthMaker(canvas.getGraph(), forest.id)	
 }

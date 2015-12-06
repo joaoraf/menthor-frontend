@@ -3,6 +3,13 @@ function extend(Child, Parent){
 	Child.prototype.constructor = Child;
 }
 
+function inArray(array, elem){
+	_.each(array, function(x){
+		if(x===elem) return true;
+	})
+	return false;
+}
+
 /** Get source point of a link view */
 function sourcePoint(linkView){
 	var link = linkView.model;

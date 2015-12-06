@@ -1,73 +1,3 @@
-//=====================================================
-//Pallete
-//=====================================================
-
-function Pallete(){
-	
-	this.language = "MCore";
-	this.graph = null;
-	this.paper = null;
-	
-	this.installOnDiv = function(htmlElemId){		
-		this.graph = new joint.dia.Graph;
-		this.paper = new joint.dia.Paper({
-			el: $('#'+htmlElemId),	
-			width: $("#"+htmlElemId).width(),
-			height: $("#"+htmlElemId).height(),
-			gridSize: 1,
-			interactive: false,
-			model: this.graph
-		});	
-		this.graph.addCells(this.elements());
-	};
-	
-	this.elements = function(){
-		var class_ = this.createElement(joint.shapes.mcore.MClass,'Class',10,10,null);
-		var dataType = this.createElement(joint.shapes.mcore.MDataType,'DataType',110, 10, null);	
-		return [class_, dataType]
-	};
-		
-	this.createElement = function (class_, name, x, y, stereotype) {
-		return new class_({
-			position: { x: x  , y: y },
-			name: name,
-			stereotype: stereotype,
-		});
-	};
-	
-	this.enableDndTo = function(canvas){
-		this.paper.on('cell:pointerdown', (function(cellView, evt, x, y){		
-			var fake = $("<div class='dnd'><div id='dnd'></div></div>").appendTo("body").css("left", x+"px").css("top", y+"px");	
-			var fakeElem = this.createElement(eval(cellView.model.get("type")), cellView.model.get("name"), 0, 0, cellView.model.get("stereotype"));
-			var fakeGraph = new joint.dia.Graph;
-			var fakePaper = new joint.dia.Paper({
-				el: $('#dnd'),
-				width: fakeElem.getWidth(),
-				height: fakeElem.getHeight(),
-				gridSize: 1,
-				model: fakeGraph
-			}); 		
-			fakeGraph.addCell(fakeElem);
-			$("body").mousemove(function(evt){
-				fake.css("left", (evt.pageX-45)+"px").css("top", (evt.pageY-30)+"px");
-			});
-			$("body").mouseup((function(evt) {
-				if(evt.pageX-$("#tools").width()-40 > 0){//if we are on target paper (canvas) we add the new element {
-					var elem = this.createElement(eval(cellView.model.get("type")), cellView.model.get("name"), evt.pageX-$("#tools").width()-40, evt.pageY-40, cellView.model.get("stereotype"));				
-					canvas.getGraph().addCell(elem);
-					$("body").unbind("mousemove");
-					$("body").unbind("mouseup");			    	
-				}
-				fake.remove();
-			}).bind(this));		
-		 }).bind(this));
-	};
-}
-
-//=====================================================
-//Connections Suggestions
-//=====================================================
-
 function ConnSuggestions(){
 		
 	this.language = "MCore"
@@ -77,8 +7,12 @@ function ConnSuggestions(){
 		this.map = { 'Generalization': 'joint.shapes.mcore.MGeneralization', 'Relationship': 'joint.shapes.mcore.MRelationship'}
 	};
 	
-	this.createConnection = function (connClass, stereotype) {
-		return new connClass({stereotype:stereotype});
+	this.createConnections = function (connClass, stereotype) {
+		var conns = []
+		_.each(Edition.selection, function(selected){
+			conns.push(new connClass({stereotype:stereotype}));
+		});
+		return conns
 	};
 	
 	this.installOn = function(canvas){
@@ -99,9 +33,13 @@ function ConnSuggestions(){
 					 hide:function(){ $.contextMenu( 'destroy' ); }
 				},
 				callback: $.proxy((function(key, options) {                         
-					if(key!=null && key!=""){	
-						var link = this.createConnection(eval(this.map[menuItems[key].name]),(String(key)).toLowerCase())
-						dndLink(evt,canvas.getGraph(),canvas.getPaper(),link);											
+					if(key!=null && key!=""){
+						var links = this.createConnections(eval(this.map[menuItems[key].name]),(String(key)).toLowerCase())
+						var idx = 0;
+						_.each(links, function(link){
+							dndLink(evt,canvas.getGraph(),canvas.getPaper(),link,idx);	
+							idx++;
+						});						
 					}
 				}).bind(this)),
 				items: menuItems
@@ -111,10 +49,10 @@ function ConnSuggestions(){
 		}).bind(this));	
 	};
 		
-	var dndLink = function(evt, graph, paper, link){
-		var cell = graph.getCell(Edition.selection[0].model.get("id"));	
+	var dndLink = function(evt, graph, paper, link, idxOnSelection){
+		var cell = graph.getCell(Edition.selection[idxOnSelection].model.get("id"));	
 		link.set("source", {
-			id: Edition.selection[0].model.get("id")
+			id: Edition.selection[idxOnSelection].model.get("id")
 		});
 		link.set("target", paper.snapToGrid({
 			x: evt.clientX,
@@ -135,8 +73,7 @@ function ConnSuggestions(){
 				y: evt.clientY
 			});
 			linkView.pointermove(evt, coords.x, coords.y)
-		});
-		$("#editor").hide();
+		});		
 	};
 }
 
@@ -158,6 +95,8 @@ function Edition(){
 	};
 	
 	this.installOn = function (canvas){
+		Edition.selection = [];
+		Edition.lastEvent = null;
 		this.installSelection(canvas)
 		this.installDelete(canvas)
 		this.installDuplicate(canvas)
@@ -171,61 +110,202 @@ function Edition(){
 		this.installResizeNE(canvas)
 	};
 	
-	this.installSelection = function(canvas){	
+	this.deselectAll = function(){
+		this.destroyBoxesFromSelection();
+		Edition.selection = [];
+	}
 	
-		canvas.getPaper().on('cell:pointerclick cell:pointerdblclick', (function(cellView, evt, x, y){
+	this.installSelection = function(canvas){
+		
+		canvas.getPaper().on('cell:pointerclick', (function(cellView, evt, x, y){
 			if(cellView.model instanceof joint.shapes.mcore.MType){
-				if (!(evt.ctrlKey || evt.metaKey)) Edition.selection = []; 
-				Edition.selection.push(cellView);				
-				console.log("Selected: "+cellView);				
-				this.updateEditionBox(cellView);									
+				if (!(evt.ctrlKey || evt.metaKey)) {
+					this.destroyBoxesFromSelection();
+					Edition.selection = [];			
+				}			
+				Edition.selection.push(cellView);	
+				console.log("Selected by Click: "+cellView);				
+				this.createSelectionBox(cellView);
+				this.updateBoxes(cellView); 
 			}
 		}).bind(this));
-		
+	
 		canvas.getPaper().on('blank:pointerdown', (function(cellView, evt, x, y){
+			this.destroyBoxesFromSelection();		
 			Edition.selection = [];
-			$("#editor").hide();
+			console.log("Unselected All");														
 		}).bind(this));
-		
+	
 		canvas.getPaper().on('cell:pointermove', (function(cellView, evt, x, y){
 			if(cellView.model instanceof joint.shapes.mcore.MType){
-				if(Edition.selection.length==0) {
-					Edition.selection.push(cellView);
-					console.log("Selected: "+cellView);
+				if(!inArray(Edition.selection,cellView)){
+					if (!(evt.ctrlKey || evt.metaKey)) {
+						this.destroyBoxesFromSelection();
+						Edition.selection = [];			
+					}						
+					Edition.selection.push(cellView);										
+					console.log("Selected by Move: "+cellView);		
+					this.createSelectionBox(cellView);
 				}
-				this.updateEditionBox(cellView);
-			}else{
-				$("#editor").hide();
+				this.updateBoxes(cellView);
+				console.log(x, y)
 			}
 		}).bind(this));	
 	};
 				
-	this.updateEditionBox = function(cell) {
+	//=====================
+	//Update Boxes
+	//=====================
+	
+	/** a box is composed by a selection box and editing box */
+	this.updateBoxes = function(cell){		
 		var currentScale = 1;
-		if(cell != null && this.firstSelected()==(cell)){
-			$("#editor").css("top", ($("#"+cell.id).offset().top-2+$("#diagram").scrollTop())+"px");
-			$("#editor").css("left", ($("#"+cell.id).offset().left-$("#diagram").offset().left-2+$("#diagram").scrollLeft())+"px");		
-			$("#editor").width((cell.model.get("size").width+2)*currentScale);
-			$("#editor").height((cell.model.get("size").height+2)*currentScale);
-			$("#editor").show();	
-		}	
+		if(cell != null){
+			var height = (cell.model.get("size").height+2)*currentScale;
+			var width = (cell.model.get("size").width+2)*currentScale;
+			var left = ($("#"+cell.id).offset().left-$("#diagram").offset().left-2+$("#diagram").scrollLeft())+"px";
+			var top = ($("#"+cell.id).offset().top-2+$("#diagram").scrollTop())+"px";			
+			this.updateSelectionBox(cell,top,left,width,height);
+			this.updateEditingBox(cell,top,left,width,height);
+		}
+	};
+	
+	/** create selection boxes into all selected elements */
+	this.updateBoxesFromSelection = function(){
+		_.each(Edition.selection, (function(selected){			
+			this.updateBoxes(selected);
+		}).bind(this));
+	};
+		
+	/** editing box which contains a delete, duplicate and connect button. */
+	this.updateEditingBox = function(cell, top, left, width, height){
+		if(cell !=null && this.firstSelected()===cell){
+			$("#editor").css("top", top);	
+			$("#editor").css("left", left);		
+			$("#editor").width(width);
+			$("#editor").height(height);			
+			$("#editor").show();
+		}
+	};
+	
+	/** selection box over each element selected */
+	this.updateSelectionBox = function(cell, top,left, width, height){		
+		var selectionBox = $('#selection-'+cell.id);
+		if(selectionBox!=null){
+			var bbox = cell.getBBox({ useModelGeometry: true });	
+			selectionBox.css("top",top);
+			selectionBox.css("left",left);
+			selectionBox.width(width+2);
+			selectionBox.height(height+2);				
+			selectionBox.show(); 
+		}		
+	};
+		
+	//=====================
+	//Destroy Boxes
+	//=====================
+		
+	/** destroy all selection boxes and the editing box of this cell (if any) */
+	this.destroyBoxes = function(cell){
+		this.destroySelectionBox(cell);
+		if(cell === this.firstSelected()) this.destroyEditingBox();
+	};
+	
+	/** destroy all seelction boxes and the editing box, regardless of which cell they are */
+	this.destroyBoxesFromSelection = function(){
+		var el = document.getElementById('selection-wrapper');
+		while (el.firstChild) el.removeChild(el.firstChild);	
+		$("#editor").hide();		
+	};
+	
+	/** destroy the selection box of this cell (if any) */
+	this.destroySelectionBox = function(cell) {        
+		if(cell!=null){
+			var selectionBox = $('#selection-'+cell.id)
+			if(selectionBox!=null){
+				var el = document.getElementById('selection-wrapper');
+				el.removeChild(selectionBox);
+			}
+		}
+    };
+	
+	/** destroy the editing box (wherever it might be) */
+	this.destroyEditingBox = function(){		
+		$("#editor").hide();		
+	};
+	
+	//==============================================
+	//Create Boxes
+	//==============================================
+			
+	/** a selection box is created dynamically according to a user click on a cell */
+	this.createSelectionBox = function(cell){
+		var selectionBox = $('<div/>', { 'class': 'selection-box', 'id': 'selection-'+cell.id });		
+		var bbox = cell.getBBox({ useModelGeometry: true });			
+		selectionBox.css("left",bbox.x+"px");
+		selectionBox.css("top",bbox.y+"px");
+		selectionBox.css({ width: bbox.width, height: bbox.height });		
+		$("#selection-wrapper").append(selectionBox);
+		selectionBox.show();		
+		return selectionBox;
+	};
+	
+	this.createSelectionBoxFromSelection = function(){
+		_.each(Edition.selection, (function(selected){
+			this.createSelectionBox(selected);
+		}).bind(this));
+	};
+	
+	//==============================================
+	//Removal
+	//==============================================
+	
+	this.removeSelection = function(canvas){		
+		_.each(Edition.selection, (function(selected){						
+			canvas.getGraph().getCell(selected.model.get("id")).remove();
+			console.log("Deleted: "+selected);
+		}).bind(this));
+		this.deselectAll();
 	};
 	
 	this.installDelete = function(canvas){
 		$(".delete").mousedown((function(evt){
 			evt.preventDefault();
 			evt.stopPropagation();				
-			removeSelection(canvas.getGraph());			
+			this.removeSelection(canvas);
 		}).bind(this));
 	};
 
+	//==============================================
+	//Duplication
+	//==============================================
+	
+	this.duplicateSelection = function(canvas){		
+		var newSelected = []
+		_.each(Edition.selection, function(selected){						
+			var newCell = canvas.getGraph().getCell(selected.model.get("id")).clone().clone();
+			canvas.getGraph().addCell(newCell);
+			console.log("Duplicated	: "+newCell)
+			newCell.translate(10, 10);
+			newSelected.push(newCell);
+		});			
+		this.deselectAll();
+		Edition.selection.push.apply(Edition.selection, newSelected);
+		this.createSelectionBoxFromSelection();
+		this.updateBoxesFromSelection();
+	};
+		
 	this.installDuplicate = function(canvas){
 		$(".duplicate").mousedown((function(evt){
 			evt.preventDefault();
 			evt.stopPropagation();
-			duplicateSelection(canvas.getGraph());
+			this.duplicateSelection(canvas);
 		}).bind(this));
 	};
+	
+	//=============================================
+	//Resizeable
+	//=============================================
 	
 	this.installResizeN = function(canvas){
 		$(".n").mousedown((function(evt){ 
@@ -346,30 +426,12 @@ function Edition(){
 			}).bind(this));
 		}).bind(this));
 	};
-	
-	var duplicateSelection = function(graph){
-		_.each(Edition.selection, function(element){			
-			var newCell = graph.getCell(element.model.get("id")).clone();
-			graph.addCell(newCell);
-			console.log("Duplicated	: "+newCell)
-			newCell.translate(10, 10);
-		});
-		$("#editor").hide();
-	};
 		
-	var removeSelection= function(graph){
-		_.each(Edition.selection, function(element){
-			var cell = graph.getCell(element.model.get("id"));
-			cell.remove();
-			console.log("Deleted: "+cell);
-		});
-		$("#editor").hide();
-	};
-	
 	var resizeSelectionOnNorth = function(edition, evt, graph){
 		_.each(Edition.selection, function(cellView){
 			resizeOnNorth(edition, evt, graph, cellView);
 		});
+		Edition.lastEvent = evt;
 	};
 	
 	var resizeOnNorth = function(edition, evt, graph, cellView){
@@ -380,16 +442,16 @@ function Edition(){
 			if(cell.get("size").height > 10 || step > 0){
 				cell.translate(0, -(step));
 				cell.resize(cell.get("size").width, cell.get("size").height+(step));
-				edition.updateEditionBox(cellView);
+				edition.updateBoxes(cellView);
 			}
-		}
-		Edition.lastEvent = evt;
+		}		
 	}
 	
 	var resizeSelectionOnSouth = function(edition, evt, graph){
-		_.each(Edition.selection, function(cellView){
+		_.each(Edition.selection, function(cellView){			
 			resizeOnSouth(edition, evt, graph, cellView);			
 		});
+		Edition.lastEvent = evt;
 	};
 	
 	var resizeOnSouth = function(edition, evt, graph, cellView){
@@ -398,16 +460,16 @@ function Edition(){
 			var step = Math.abs(Edition.lastEvent.pageY-evt.pageY) > 10?(Edition.lastEvent.pageY-evt.pageY > 0?10:-10):Edition.lastEvent.pageY-evt.pageY;
 			if(cell.get("size").height > 10 || step < 0){
 				cell.resize(cell.get("size").width, cell.get("size").height-(step));				
-				edition.updateEditionBox(cellView);
+				edition.updateBoxes(cellView);
 			}
-		}
-		Edition.lastEvent = evt;
+		}		
 	};
 	
 	var resizeSelectionOnWeast = function(edition, evt, graph){
 		_.each(Edition.selection, function(cellView){
 			resizeOnWeast(edition, evt, graph, cellView);
 		});
+		Edition.lastEvent = evt;
 	};
 	
 	var resizeOnWeast = function(edition, evt, graph, cellView){
@@ -417,16 +479,16 @@ function Edition(){
 			if(cell.get("size").width > 10 || step > 0){
 				cell.translate(-(step), 0);
 				cell.resize(cell.get("size").width+(step), cell.get("size").height);
-				edition.updateEditionBox(cellView);
+				edition.updateBoxes(cellView);
 			}
-		}
-		Edition.lastEvent = evt;
+		}		
 	};
 	
 	var resizeSelectionOnEast = function(edition, evt, graph){
 		_.each(Edition.selection, function(cellView){
 			resizeOnEast(edition, evt, graph, cellView);
 		});
+		Edition.lastEvent = evt;
 	};
 	
 	var resizeOnEast = function(edition, evt, graph, cellView){
@@ -435,16 +497,16 @@ function Edition(){
 			var step = Math.abs(Edition.lastEvent.pageX-evt.pageX) > 10?(Edition.lastEvent.pageX-evt.pageX > 0?10:-10):Edition.lastEvent.pageX-evt.pageX;				
 			if(cell.get("size").width > 10 || step < 0){
 				cell.resize(cell.get("size").width-(step), cell.get("size").height);
-				edition.updateEditionBox(cellView);
+				edition.updateBoxes(cellView);
 			}
-		}
-		Edition.lastEvent = evt;
+		}		
 	};
 	
 	var resizeSelectionOnSoutheast = function(edition, evt, graph){
 		_.each(Edition.selection, function(cellView){
 			resizeOnSoutheast(edition, evt, graph, cellView);
 		});
+		Edition.lastEvent = evt;
 	};
 	
 	var resizeOnSoutheast = function(edition, evt, graph, cellView){
@@ -458,15 +520,15 @@ function Edition(){
 			if(cell.get("size").height > 10 || stepY < 0){
 				cell.resize(cell.get("size").width, cell.get("size").height-(stepY));						
 			}
-			edition.updateEditionBox(cellView);
-		}
-		Edition.lastEvent = evt;
+			edition.updateBoxes(cellView);
+		}		
 	};
 
 	var resizeSelectionOnNortheast = function(edition, evt, graph){
 		_.each(Edition.selection, function(cellView){
 			resizeOnNortheast(edition, evt, graph, cellView);
 		});
+		Edition.lastEvent = evt;
 	};
 	
 	var resizeOnNortheast = function(edition, evt, graph, cellView){		
@@ -481,15 +543,15 @@ function Edition(){
 				cell.translate(0, -(stepY));
 				cell.resize(cell.get("size").width, cell.get("size").height+(stepY));
 			}
-			edition.updateEditionBox(cellView);
-		}
-		Edition.lastEvent = evt;
+			edition.updateBoxes(cellView);
+		}		
 	};
 	
 	var resizeSelectionOnSouthweast = function(edition, evt, graph){
 		_.each(Edition.selection, function(cellView){
 			resizeOnSouthweast(edition, evt, graph, cellView);
 		});
+		Edition.lastEvent = evt;
 	};
 	
 	var resizeOnSouthweast = function(edition, evt, graph, cellView){		
@@ -504,15 +566,15 @@ function Edition(){
 			if(cell.get("size").height > 10 || stepY < 0){
 				cell.resize(cell.get("size").width, cell.get("size").height-stepY);
 			}
-			edition.updateEditionBox(cellView);
-		}
-		Edition.lastEvent = evt;
+			edition.updateBoxes(cellView);
+		}		
 	};
 
 	var resizeSelectionOnNorthweast = function(edition, evt, graph){
 		_.each(Edition.selection, function(cellView){
 			resizeOnNorthweast(edition, evt, graph, cellView);
 		});
+		Edition.lastEvent = evt;
 	};
 	
 	var resizeOnNorthweast = function(edition, evt, graph, cellView){	
@@ -528,89 +590,9 @@ function Edition(){
 				cell.translate(0, -(stepY));
 				cell.resize(cell.get("size").width, cell.get("size").height+(stepY));
 			}
-			edition.updateEditionBox(cellView);
-		}
-		Edition.lastEvent = evt;
+			edition.updateBoxes(cellView);
+		}		
 	};	
-}
-
-//=====================================================
-//Canvas
-//=====================================================
-
-function Canvas(htmlElemId){
-		
-	this.graph = new joint.dia.Graph;
-	
-	this.canvas = new joint.dia.Paper({
-		el: $('#'+htmlElemId),		
-		gridSize: 1,
-		model: this.graph,		
-		width: $('#'+htmlElemId).parent().width()*2,
-		height: $('#'+htmlElemId).parent().height()*2,
-		
-		//switch creating vertices with single click to double click
-		linkView: joint.dia.LinkView.extend({
-			pointerdblclick: function(evt, x, y) {
-				if (V(evt.target).hasClass('connection') || V(evt.target).hasClass('connection-wrap')) {
-					this.addVertex({ x: x, y: y });
-				}
-			}
-		}),
-		interactive: function(cellView) {
-			if (cellView.model instanceof joint.dia.Link) {
-				// Disable the default vertex add functionality on pointerdown.
-				return { vertexAdd: false };
-			}
-			return true;
-		}
-	});	
-		
-	this.getPaper = function(){
-		return this.canvas;
-	}
-	
-	this.getGraph = function(){
-		return this.graph;
-	}
-	
-	this.forbidInteractionsOnAllLinks = function(){
-		_.each(this.graph.getLinks(), function(link){
-			var linkView = this.paper.findViewByModel(link);
-			linkView.options.interactive = false;
-		});
-	}
-
-	this.forbidDroppingLinksOnEmptySpace = function(){	
-		var recordedTgt = null;
-		var recordedSrc = null
-		this.canvas.on('cell:pointerdown ', function(cellView, evt, x, y) { 
-			if(cellView.model.isLink() && cellView.targetView != null){
-				recordedTgt = cellView.model.get('target');
-			}
-			if(cellView.model.isLink() && cellView.sourceView != null){
-				recordedSrc = cellView.model.get('source');
-			}
-		})
-		this.canvas.on('cell:pointerup ', function(cellView, evt, x, y) { 
-			if(cellView.model.isLink() && cellView.targetView == null){
-				if(recordedTgt == null){
-					cellView.remove();
-				}else{
-					cellView.model.set('target', recordedTgt);
-					recordedTgt = null;
-				}
-			}
-			if(cellView.model.isLink() && cellView.sourceView == null){
-				if(recordedSrc == null){
-					cellView.remove();
-				}else{
-					cellView.model.set('source', recordedSrc);
-					recordedSrc = null;
-				}
-			}			
-		});
-	}	
 }
 
 //=====================================================
@@ -647,8 +629,7 @@ function allowRightClickMenus(graph, paper){
 		evt.stopPropagation(); 
 		evt.preventDefault();  
 		var cellView = paper.findView(evt.target);
-		if (cellView) {
-		   console.log(cellView.model.id);
+		if (cellView) {		   
 		   if(cellView.model instanceof joint.dia.Link){
 				$.contextMenu({
 					selector: '.contextmenu', 

@@ -64,13 +64,15 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 		return this.getName()+"\n"+this.getStereotype()
 	},
 	
-	updateStereotypeLabel: function(){			
+	updateStereotypeLabel: function(){					
+		var txt = this.getStereotype();
+		if(this.getStereotypeName()=='derivation') txt = ""
 		this.label(3, {
-            position: 0.5,
-            attrs: {
-                rect: { fill: 'white' }, text: { dy: 10, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getStereotype() }
-            },
-        });		
+			position: 0.5,
+			attrs: {
+				rect: { fill: 'white' }, text: { dy: 10, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: txt }
+			},
+		});				
 	},
 	
 	getMetaAttributesLabelName: function(){
@@ -107,8 +109,14 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 				source: { x: this.midpoint(graph).x, y:this.midpoint(graph).y },
 				target: { id: truthMakerId },
 			});
-			return this.derivation
-		}				
+			graph.getCell(this.get('source').id).on('add change:position', function(){
+				this.derivation.set('source', { x: this.midpoint(graph).x, y: this.midpoint(graph).y });
+			}, this);
+			graph.getCell(this.get('target').id).on('add change:position', function(){
+				this.derivation.set('source', { x: this.midpoint(graph).x, y: this.midpoint(graph).y });
+			}, this);
+			graph.addCells([this.derivation]);
+		}	
 	},		
 		
 	updateShape: function(){
@@ -121,7 +129,8 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 			this.attr('.marker-source', { d: 'M 20 8 L 10 0 L 0 8 L 10 16 z', fill: color});			
 		}else if(this.getStereotypeName().toLowerCase()=='derivation'){				
 			this.attr('.connection', { 'stroke-dasharray': '5,5' });		
-			this.attr('.marker-target', { d: 'M-5,0a5,5 0 1,0 10,0a5,5 0 1,0 -10,0', fill: color});					
+			this.attr('.marker-target', { d: 'M-5,0a5,5 0 1,0 10,0a5,5 0 1,0 -10,0', fill: color});	
+			this.toBack();
 		} else if(this.getStereotypeName().toLowerCase=='material'){
 			setTruthMaker(null);
 		}	
@@ -132,19 +141,12 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 		joint.shapes.mcore.MRelationship.prototype.initialize.apply(this, arguments);
 		
 		this.updateShape();
-		
-		this.on('add change:vertices', function() { this.updatePath(); }, this);
-		
+				
 		this.on('add change:stereotype',function() { this.updateStereotypeLabel(); this.updateShape(); }, this);
 		
 		this.on('add change:essentialPart change:immutablePart change:immutableWhole change:inseparablePart', 
 		function() { this.updateMetaAttributeLabels(); }, this);
-    },
-	
-	updatePath: function(){
-		
-	},
-	
+    },	
 });
 
 /** OntoUML DataType */
