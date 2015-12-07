@@ -1,17 +1,33 @@
+
+/** 
+  * It requires a div in the main html code to put the joint paper regarding the toolbox (e.g. '<div/> class=pallete').
+  */
 function Pallete(){
 	
 	this.language = "MCore";
 	this.graph = null;
 	this.paper = null;
 	this.htmlElemId = null;
+			
+	this.parentHtmlElem = function(){
+		return $('#'+this.htmlElemId).parent();
+	};
+	
+	this.htmlElem = function(){
+		return $('#'+this.htmlElemId)
+	};
+	
+	this.getHtmlElemId = function(){
+		return htmlElemId;
+	};
 	
 	this.installOnDiv = function(htmlElemId){	
 		this.htmlElemId = htmlElemId;
 		this.graph = new joint.dia.Graph;
 		this.paper = new joint.dia.Paper({
-			el: $('#'+this.htmlElemId),	
-			width: $("#"+this.htmlElemId).width(),
-			height: $("#"+this.htmlElemId).height(),
+			el: this.htmlElem(),	
+			width: this.htmlElem().width(),
+			height: this.htmlElem().height(),
 			gridSize: 1,
 			interactive: false,
 			model: this.graph
@@ -40,8 +56,8 @@ function Pallete(){
 			var fakeGraph = new joint.dia.Graph;
 			var fakePaper = new joint.dia.Paper({
 				el: $('#dnd'),
-				width: fakeElem.getWidth(),
-				height: fakeElem.getHeight(),
+				width: fakeElem.get('size').width,
+				height: fakeElem.get('size').height,
 				gridSize: 1,
 				model: fakeGraph
 			}); 		
@@ -50,8 +66,8 @@ function Pallete(){
 				fake.css("left", (evt.pageX-45)+"px").css("top", (evt.pageY-30)+"px");
 			});
 			$("body").mouseup((function(evt) {
-				if(evt.pageX-$("#"+this.htmlElemId).parent().width()-40 > 0){//if we are on target paper (canvas) we add the new element {
-					var elem = this.createElement(eval(cellView.model.get("type")), cellView.model.get("name"), evt.pageX-$("#"+this.htmlElemId).parent().width()-40, evt.pageY-40, cellView.model.get("stereotype"));				
+				if(evt.pageX-this.parentHtmlElem().width()-40 > 0){//if we are on target paper (canvas) we add the new element {
+					var elem = this.createElement(eval(cellView.model.get("type")), cellView.model.get("name"), evt.pageX-this.parentHtmlElem().width()-40, evt.pageY-40, cellView.model.get("stereotype"));				
 					canvas.getGraph().addCell(elem);
 					$("body").unbind("mousemove");
 					$("body").unbind("mouseup");			    	

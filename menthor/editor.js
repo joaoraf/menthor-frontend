@@ -1,86 +1,7 @@
-function ConnSuggestions(){
-		
-	this.language = "MCore"
-	this.map = {};
-	
-	this.defaultConnections = function(){
-		this.map = { 'Generalization': 'joint.shapes.mcore.MGeneralization', 'Relationship': 'joint.shapes.mcore.MRelationship'}
-	};
-	
-	this.createConnections = function (connClass, stereotype) {
-		var conns = []
-		_.each(Edition.selection, function(selected){
-			conns.push(new connClass({stereotype:stereotype}));
-		});
-		return conns
-	};
-	
-	this.installOn = function(canvas){
-		this.defaultConnections();
-		$(".connect").mousedown((function(evt){
-			evt.preventDefault();
-			evt.stopPropagation();
-			var xPos = evt.clientX;
-			var yPos = evt.clientY;	
-			var menuItems = {};
-			for(key in this.map){
-				var k = (String(key)).toLowerCase()
-				menuItems[k] = {name: String(key)}
-			}
-			$.contextMenu({
-				selector: '.contextmenu', 
-				events: {  
-					 hide:function(){ $.contextMenu( 'destroy' ); }
-				},
-				callback: $.proxy((function(key, options) {                         
-					if(key!=null && key!=""){
-						var links = this.createConnections(eval(this.map[menuItems[key].name]),(String(key)).toLowerCase())
-						var idx = 0;
-						_.each(links, function(link){
-							dndLink(evt,canvas.getGraph(),canvas.getPaper(),link,idx);	
-							idx++;
-						});						
-					}
-				}).bind(this)),
-				items: menuItems
-			});	
-			$('.contextmenu').contextMenu({x: xPos, y: yPos});
-			
-		}).bind(this));	
-	};
-		
-	var dndLink = function(evt, graph, paper, link, idxOnSelection){
-		var cell = graph.getCell(Edition.selection[idxOnSelection].model.get("id"));	
-		link.set("source", {
-			id: Edition.selection[idxOnSelection].model.get("id")
-		});
-		link.set("target", paper.snapToGrid({
-			x: evt.clientX,
-			y: evt.clientY
-		}));			
-		graph.addCell(link, {
-			validation: false
-		});
-		var linkView = paper.findViewByModel(link);
-		linkView.startArrowheadMove("target");
-		$("body").mouseup(function(evt){		
-			linkView.pointerup(evt);
-			$("body").unbind();
-		});
-		$("body").mousemove(function(evt){
-			var coords = paper.snapToGrid({
-				x: evt.clientX,
-				y: evt.clientY
-			});
-			linkView.pointermove(evt, coords.x, coords.y)
-		});		
-	};
-}
 
-//=====================================================
-//Selection & Edition
-//=====================================================
-
+/** 
+  * It assumes to have div's with classes such as 'diagram', 'selection-wrapper', 'editor', 'duplicate', 'delete', etc. 
+  */
 function Edition(){
 		
 	Edition.lastEvent = null;
@@ -118,13 +39,12 @@ function Edition(){
 	this.installSelection = function(canvas){
 		
 		canvas.getPaper().on('cell:pointerclick', (function(cellView, evt, x, y){
-			if(cellView.model instanceof joint.shapes.mcore.MType){
+			if(cellView.model instanceof joint.shapes.mcore.MType || cellView.model instanceof joint.shapes.mcore.MGeneralizationSet){
 				if (!(evt.ctrlKey || evt.metaKey)) {
 					this.destroyBoxesFromSelection();
 					Edition.selection = [];			
 				}			
-				Edition.selection.push(cellView);	
-				console.log("Selected by Click: "+cellView);				
+				Edition.selection.push(cellView);				
 				this.createSelectionBox(cellView);
 				this.updateBoxes(cellView); 
 			}
@@ -132,23 +52,20 @@ function Edition(){
 	
 		canvas.getPaper().on('blank:pointerdown', (function(cellView, evt, x, y){
 			this.destroyBoxesFromSelection();		
-			Edition.selection = [];
-			console.log("Unselected All");														
+			Edition.selection = [];						
 		}).bind(this));
 	
 		canvas.getPaper().on('cell:pointermove', (function(cellView, evt, x, y){
-			if(cellView.model instanceof joint.shapes.mcore.MType){
+			if(cellView.model instanceof joint.shapes.mcore.MType || cellView.model instanceof joint.shapes.mcore.MGeneralizationSet){
 				if(!inArray(Edition.selection,cellView)){
 					if (!(evt.ctrlKey || evt.metaKey)) {
 						this.destroyBoxesFromSelection();
 						Edition.selection = [];			
 					}						
-					Edition.selection.push(cellView);										
-					console.log("Selected by Move: "+cellView);		
+					Edition.selection.push(cellView);											
 					this.createSelectionBox(cellView);
 				}
 				this.updateBoxes(cellView);
-				console.log(x, y)
 			}
 		}).bind(this));	
 	};
@@ -185,6 +102,8 @@ function Edition(){
 			$("#editor").width(width);
 			$("#editor").height(height);			
 			$("#editor").show();
+			if(cell.model instanceof joint.shapes.mcore.MGeneralizationSet) $(".connect").hide();
+			else $(".connect").show();
 		}
 	};
 	
@@ -614,7 +533,7 @@ function treeStyleSubMenuItems(){
 	return {
         "name": "Tree Style", 
         "items": {
-		   "direct": {name: "Direct"},
+		    "direct": {name: "Direct"},
 			"verticaltree": {name: "Vertical Tree" }, 
 			"horizontaltree": {name: "Horizontal Tree" },
 			"orthogonal" : {name: "Orthogonal"}, 

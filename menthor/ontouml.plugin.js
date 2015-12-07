@@ -1,5 +1,5 @@
 extend(OntoUMLPallete,Pallete);
-extend(OntoUMLConnSuggestions,ConnSuggestions);
+extend(OntoUMLConnect,Connect);
 
 function OntoUMLPallete(){
 	this.language = "OntoUML"
@@ -22,11 +22,14 @@ function OntoUMLPallete(){
 		var domain = this.createElement(joint.shapes.ontouml.DataType,'Domain',110, 360,'domain');
 		var dimension = this.createElement(joint.shapes.ontouml.DataType,'Dimension',10, 410,'dimension');	
 		var enumeration = this.createElement(joint.shapes.ontouml.DataType,'Enumeration',110, 410,'enumeration');	
-		return [kind, collective, quantity, relator, mode, quality, subkind, role, phase,category, roleMixin, phaseMixin, mixin, event, highorder, domain, dimension, enumeration];
+		var genset = this.createElement(joint.shapes.ontouml.GeneralizationSet,'',10, 460, null);
+		genset.set('size',{width: 195, height: 20});
+		return [kind, collective, quantity, relator, mode, quality, subkind, role, phase,
+		category, roleMixin, phaseMixin, mixin, event, highorder, domain, dimension, enumeration, genset];
 	}		
 }
 	
-function OntoUMLConnSuggestions(){
+function OntoUMLConnect(){
 	this.language = "OntoUML"
 	this.defaultConnections = function(){
 		this.map = { 
@@ -36,7 +39,6 @@ function OntoUMLConnSuggestions(){
 			'Structuration': 'joint.shapes.ontouml.Relationship',
 			'Formal': 'joint.shapes.ontouml.Relationship', 
 			'Material': 'joint.shapes.ontouml.Relationship', 
-			'Derivation': 'joint.shapes.ontouml.Relationship', 
 			'ComponentOf': 'joint.shapes.ontouml.Relationship',
 			'MemberOf': 'joint.shapes.ontouml.Relationship',
 			'SubCollectionOf': 'joint.shapes.ontouml.Relationship', 
@@ -92,13 +94,18 @@ function runningExample(canvas){
         source: { id: tree.id },
         target: { id: entity.id }
     });	
+	console.log(link2.toString());
 	
-	canvas.getGraph().addCells([forest, tree, entity, color, link, link2, material]);
+	var genSet = new joint.shapes.ontouml.GeneralizationSet({
+		isDisjoint: true,
+		isCovering: true,
+	});	
 	
-	var genSet = new joint.shapes.ontouml.GeneralizationSet();
-	genSet.setIsDisjoint(true);
-	genSet.setIsCovering(true);
-	canvas.getGraph().addCell(genSet);
+	canvas.getGraph().addCells([forest, tree, entity, color, link, link2, material, genSet]);
+		
+	//workaraound to draw derivations
+	material.setTruthMaker(canvas, forest.id)	
 	
-	material.setTruthMaker(canvas.getGraph(), forest.id)	
+	//workaraound to link genSets to its generalizations
+	genSet.setGeneralizations(canvas, [link2]);			
 }

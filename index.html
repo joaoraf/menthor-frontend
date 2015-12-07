@@ -14,12 +14,13 @@
 	<script src="draw2d/lib/jquery.contextmenu.js"></script>
     
 	<!-- Menthor Editor -->	
+	<link rel="stylesheet" href="menthor/editor.css" />
 	<script src="menthor/utility.js"></script>
 	<script src="menthor/pallete.js"></script>
 	<script src="menthor/canvas.js"></script>
-	<script src="menthor/mcore.js"></script>
-	<link rel="stylesheet" href="menthor/editor.css" />
-	<script src="menthor/editor.js"></script>	
+	<script src="menthor/editor.js"></script>
+	<script src="menthor/connect.js"></script>		
+	<script src="menthor/mcore.js"></script>	
 	
 	<!-- OntoUML plugin -->
 	<script src="menthor/ontouml.lang.js"></script>
@@ -73,8 +74,10 @@
 	var edition = new Edition();
 	edition.installOn(canvas1);
 	//install connections suggestions on that diagram
-	var sugg = new OntoUMLConnSuggestions();
-	sugg.installOn(canvas1);
+	var sugg = new OntoUMLConnect();
+	sugg.installOnDivs("connect","contextmenu");
+	sugg.setCanvas(canvas1);
+	
 	//===============================
 	
 	allowRightClickMenus(canvas1.getGraph(), canvas1.getPaper());

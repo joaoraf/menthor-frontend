@@ -10,6 +10,16 @@ function inArray(array, elem){
 	return false;
 }
 
+function midPoint(graph, link){
+	if(link!=null){
+		var srcCenter = graph.getCell(link.get('source').id).getBBox().center();		
+		var trgCenter = graph.getCell(link.get('target').id).getBBox().center();
+		var midPoint = g.line(srcCenter, trgCenter).midpoint();
+		return midPoint;
+	}
+	return {x: 10, y: 10} ;
+}
+	
 /** Get source point of a link view */
 function sourcePoint(linkView){
 	var link = linkView.model;
@@ -20,7 +30,7 @@ function sourcePoint(linkView){
 /** Get target point of a link view */
 function targetPoint(linkView){
 	var link = linkView.model;
-	var targetPoint = linkView.getConnectionPoint('target', link.get('target'), _.last(link.get('vertices')) || sourcePoint);
+	var targetPoint = linkView.getConnectionPoint('target', link.get('target'), _.last(link.get('vertices')) || link.get('source'));
 	return targetPoint;
 }	
 
@@ -76,6 +86,13 @@ function getDirectionFromTo(node1, node2){
     if (node1x >  node2x && node1y > node2y) return 'SE_NW';
     if (node2x >  node1x && node2y < node1y) return 'SW_NE';
     return 'NE_SW';
+}
+
+function linkDirection(link){
+	var node1 = graph.getCell(link.get('source').id);
+	var node2 = graph.getCell(link.get('target').id);
+	var direction = getDirectionFromTo(node1, node2);
+	return direction;
 }
 
 function verticalTreeRouter(graph, linkView){

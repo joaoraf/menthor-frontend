@@ -95,25 +95,20 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
         });	
 	},
 	
-	midpoint: function(graph){
-		var srcCenter = graph.getCell(this.get('source').id).getBBox().center();		
-        var trgCenter = graph.getCell(this.get('target').id).getBBox().center();
-        var midPoint = g.line(srcCenter, trgCenter).midpoint();
-		return midPoint;
-	},
-	
-	setTruthMaker: function(graph, truthMakerId){
+	setTruthMaker: function(canvas, truthMakerId){
 		if(truthMakerId!=null){
+			var graph = canvas.getGraph();
+			var paper = canvas.getPaper();
 			this.derivation = new joint.shapes.ontouml.Relationship({
 				stereotype:'derivation',
-				source: { x: this.midpoint(graph).x, y:this.midpoint(graph).y },
+				source: { x: midPoint(graph, this).x, y:midPoint(graph, this).y },
 				target: { id: truthMakerId },
 			});
 			graph.getCell(this.get('source').id).on('add change:position', function(){
-				this.derivation.set('source', { x: this.midpoint(graph).x, y: this.midpoint(graph).y });
+				this.derivation.set('source', { x: midPoint(graph, this).x, y: midPoint(graph, this).y });
 			}, this);
 			graph.getCell(this.get('target').id).on('add change:position', function(){
-				this.derivation.set('source', { x: this.midpoint(graph).x, y: this.midpoint(graph).y });
+				this.derivation.set('source', { x: midPoint(graph, this).x, y: midPoint(graph, this).y });
 			}, this);
 			graph.addCells([this.derivation]);
 		}	
