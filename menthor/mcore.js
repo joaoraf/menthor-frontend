@@ -79,10 +79,6 @@ joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
 	
 	getGeneral: function(){ return this.get('target') },
 	getSpecific: function(){ return this.get('source') },
-	
-	toString: function(){
-		return this.getSpecific().name+" -> "+this.getGeneral().name;
-	},
 });
 
 /** M-Relationship */

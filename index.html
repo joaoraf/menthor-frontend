@@ -19,12 +19,13 @@
 	<script src="menthor/pallete.js"></script>
 	<script src="menthor/canvas.js"></script>
 	<script src="menthor/editor.js"></script>
-	<script src="menthor/connect.js"></script>		
+	<script src="menthor/connect.js"></script>
+	<script src="menthor/rightclick.js"></script>	
 	<script src="menthor/mcore.js"></script>	
 	
 	<!-- OntoUML plugin -->
-	<script src="menthor/ontouml.lang.js"></script>
-	<script src="menthor/ontouml.plugin.js"></script>
+	<script src="menthor/plugin/ontouml.lang.js"></script>
+	<script src="menthor/plugin/ontouml.plugin.js"></script>
 	
 </head>
 
@@ -79,9 +80,8 @@
 	sugg.setCanvas(canvas1);
 	
 	//===============================
-	
-	allowRightClickMenus(canvas1.getGraph(), canvas1.getPaper());
-	
+	var rightClickMenu = new OntoUMLRightClickContextMenu();
+	rightClickMenu.installOn("contextmenu", canvas1);
   
 	</script>
 </body>
