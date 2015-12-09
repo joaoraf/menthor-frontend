@@ -63,7 +63,8 @@
 	pallete.installOnDiv("pallete");
 	
 	//create a diagram at the 'canvas' html element
-	var canvas1 = new Canvas("canvas");
+	var canvas1 = new OntoUMLCanvas();
+	canvas1.installOn("canvas");
 	canvas1.forbidDroppingLinksOnEmptySpace();
 	runningExample(canvas1); //draw a running example on it
 	

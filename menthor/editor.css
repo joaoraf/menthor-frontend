@@ -346,8 +346,8 @@ button:hover
 
 .selection {
    position: absolute;
-   background-color: red;
-   border: 2px dashed red;
+   background-color: blue;
+   border: 2px dashed blue;
    opacity: .7;
    overflow: visible;
 }
@@ -357,10 +357,10 @@ button:hover
    padding-right: 5px;
    padding-bottom: 5px;
    box-sizing: content-box;   
-   border: 1px solid #8e44ad;
+   border: 1px solid blue;
    margin-top: -4px;
    margin-left: -4px;
-   box-shadow: 2px 2px 5px #8e44ad;
+   box-shadow: 2px 2px 5px blue;
       	
    display: none;	
    z-index: 1;	
@@ -374,5 +374,5 @@ button:hover
 }
 
 .selection-wrapper{
-   border: 1px dotted #8e44ad;
+   border: 1px dotted blue;
 }

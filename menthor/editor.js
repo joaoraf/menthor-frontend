@@ -6,6 +6,7 @@ function Edition(){
 		
 	Edition.lastEvent = null;
 	Edition.selection = [];
+	this.canvas = null;
 	
 	this.firstSelected = function(){
 		return Edition.selection[0];
@@ -18,6 +19,7 @@ function Edition(){
 	this.installOn = function (canvas){
 		Edition.selection = [];
 		Edition.lastEvent = null;
+		this.canvas = canvas;
 		this.installSelection(canvas)
 		this.installDelete(canvas)
 		this.installDuplicate(canvas)
@@ -102,8 +104,11 @@ function Edition(){
 			$("#editor").width(width);
 			$("#editor").height(height);			
 			$("#editor").show();
-			if(cell.model instanceof joint.shapes.mcore.MGeneralizationSet) $(".connect").hide();
-			else $(".connect").show();
+			if(cell.model instanceof joint.shapes.mcore.MGeneralizationSet) { 
+				$(".connect").hide(); $(".s").hide(); $(".n").hide(); $(".sw").hide(); $(".nw").hide(); $(".se").hide(); $(".ne").hide(); $(".e").hide(); $(".w").hide();				
+			}else { 
+				$(".connect").show(); $(".s").show(); $(".n").show(); $(".sw").show(); $(".nw").show(); $(".se").show(); $(".ne").show(); $(".e").show(); $(".w").show();
+			}			
 		}
 	};
 	
@@ -116,7 +121,8 @@ function Edition(){
 			selectionBox.css("left",left);
 			selectionBox.width(width+2);
 			selectionBox.height(height+2);				
-			selectionBox.show(); 
+			selectionBox.show();
+			this.canvas.displayGenSetLinks(cell,'block'); // show gen set links
 		}		
 	};
 		
@@ -134,7 +140,8 @@ function Edition(){
 	this.destroyBoxesFromSelection = function(){
 		var el = document.getElementById('selection-wrapper');
 		while (el.firstChild) el.removeChild(el.firstChild);	
-		$("#editor").hide();		
+		$("#editor").hide();	
+		this.canvas.displayAllGenSetLinks('none'); // hide all gen set links						
 	};
 	
 	/** destroy the selection box of this cell (if any) */
@@ -145,6 +152,7 @@ function Edition(){
 				var el = document.getElementById('selection-wrapper');
 				el.removeChild(selectionBox);
 			}
+			this.canvas.displayGenSetLinks(cell,'none'); // hide gen set links				
 		}
     };
 	

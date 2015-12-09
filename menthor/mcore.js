@@ -1,6 +1,6 @@
 joint.shapes.mcore = {};
 
-/** M-GeneralizationSet */
+/** MGeneralizationSet */
 joint.shapes.mcore.MGeneralizationSet = joint.shapes.basic.Rect.extend({
 	
 	defaults: joint.util.deepSupplement({
@@ -35,47 +35,52 @@ joint.shapes.mcore.MGeneralizationSet = joint.shapes.basic.Rect.extend({
 	toString: function(){
 		return this.getName()+" "+this.getAttributesText();
 	},
-	
- 	setGeneralizations: function(canvas, gens){		
-		_.each(gens, (function(g){
-			if(!inArray(this.get('generalizations'), g)) this.get('generalizations').push(g);	
-		}).bind(this));	
-		this.updatePosition(canvas.getGraph());
-	},
-	
+		
 	initialize: function() {
         joint.shapes.basic.Rect.prototype.initialize.apply(this, arguments);
 		this.on('add change:isCovering change:isDisjoint',function() { this.updateText(); }, this);	
 	},
-	
+		
 	getMiddleGeneralization: function(){
 		if(this.get('generalizations')==null) return;
 		var mid = Math.floor(this.get('generalizations').length/2);
 		if(mid<0) mid=0;
 		return this.get('generalizations')[mid];		
 	},
-		
-	updatePosition: function(graph){
-		this.toBack();
-		var pointAnchor = midPoint(graph,this.getMiddleGeneralization());
-		this.set('position', {x: pointAnchor.x, y: pointAnchor.y });				
-	},
 	
 	updateText: function(){
 		this.get('attrs').text.text = this.getAttributesText();		
 	},
+	
+	addGeneralizations: function(canvas, gens){		
+		_.each(gens, (function(g){
+			if(!inArray(this.get('generalizations'), g)) this.get('generalizations').push(g);	
+		}).bind(this));	
+		this.updatePosition(canvas.getGraph());
+	},
+	
+	updatePosition: function(graph){
+		this.toBack();
+		var pointAnchor = midPoint(graph,this.getMiddleGeneralization());
+		this.set('position', {x: pointAnchor.x, y: pointAnchor.y });				
+	},	
 });
 
-/** M-Generalization */
+/** MGeneralization */
 joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
 	defaults: joint.util.deepSupplement({  
 		type: 'joint.shapes.mcore.MGeneralization',
-		attrs: { '.marker-target': { d: 'M 18 0 L 0 10 L 18 18 z', fill: 'white' }}		
-	}, joint.shapes.uml.Association.prototype.defaults),
+		attrs: { '.marker-target': { d: 'M 18 0 L 0 10 L 18 18 z', fill: 'white' }},
+		link: [], //to genset
+	}, joint.shapes.uml.Generalization.prototype.defaults),
 	
 	initialize: function() {
         joint.shapes.uml.Generalization.prototype.initialize.apply(this, arguments);
     },
+	
+	getGeneralizationSet: function(){
+		return this.get('link').get('target')
+	},
 	
 	getGeneral: function(){ return this.get('target') },
 	getSpecific: function(){ return this.get('source') },
@@ -175,7 +180,7 @@ joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
 	},
 });
 
-/** M-Type */
+/** MType */
 joint.shapes.mcore.MType = joint.shapes.uml.Class.extend({
 
     defaults: joint.util.deepSupplement({
@@ -250,12 +255,12 @@ joint.shapes.mcore.MType = joint.shapes.uml.Class.extend({
 });
 
 
-/** M-Class */
+/** MClass */
 joint.shapes.mcore.MClass = joint.shapes.mcore.MType.extend({
 	type: 'joint.shapes.mcore.MClass',
 });
 
-/** M-DataType */
+/** MDataType */
 joint.shapes.mcore.MDataType = joint.shapes.mcore.MType.extend({
 	type: 'joint.shapes.mcore.MDataType',
 });

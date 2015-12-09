@@ -14,6 +14,7 @@ function RightClickContextMenu(){
 			if(key==="verticaltree") verticalTreeRouter(this.canvas.getGraph(), cellView); 
 			if(key==="horizontaltree") horizontalTreeRouter(this.canvas.getGraph(), cellView);
 			if(key==="direct") cellView.model.set('vertices',{});
+			if(key==="linktogenset") this.canvas.dragGenToGenSet(cellView.model, evt);
 		}
 	};
 
@@ -22,10 +23,9 @@ function RightClickContextMenu(){
 	//=================
 	
 	this.getItems = function(cellView){
-		var items = {}
-		if(cellView.model instanceof joint.dia.Link){
-			items["treestyle"] = treeStyle();
-		}
+		var items = {}		
+		if(cellView.model instanceof joint.shapes.mcore.MGeneralization) items["linktogenset"] = {name: "Gen Set"};
+		if(cellView.model instanceof joint.dia.Link) items["treestyle"] = treeStyle();
 		return items;		
 	};
 	
@@ -54,12 +54,13 @@ function RightClickContextMenu(){
 			evt.preventDefault();  
 			var cellView = this.canvas.getPaper().findView(evt.target);
 			if (cellView) {
-				this.items = {}
+				var map = this.getItems(cellView);
+				if(_.isEmpty(map)) { return; }
 				$.contextMenu({
 					selector: '.'+$contextMenuId, 
 					events: { hide:function(){ $.contextMenu( 'destroy' ); } },
 					callback: $.proxy((function(key, options) { this.action(evt, key, cellView); }).bind(this)),
-					items: this.getItems(cellView),
+					items: map,
 				});	
 				$('.'+$contextMenuId).contextMenu({x: evt.clientX, y: evt.clientY});
 			}

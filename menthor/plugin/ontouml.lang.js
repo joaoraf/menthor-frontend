@@ -1,16 +1,16 @@
 joint.shapes.ontouml = {};
 
-/** OntoUML Generalization Set */
+/** Generalization Set */
 joint.shapes.ontouml.GeneralizationSet = joint.shapes.mcore.MGeneralizationSet.extend({
 	type: 'joint.shapes.ontouml.GeneralizationSet',	
 });
 
-/** OntoUML Generalization */
+/** Generalization */
 joint.shapes.ontouml.Generalization = joint.shapes.mcore.MGeneralization.extend({
 	type: 'joint.shapes.ontouml.Generalization',	
 });
 
-/** OntoUML Relationship */
+/** Relationship */
 joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 	
 	defaults: joint.util.deepSupplement({ 
@@ -32,37 +32,14 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 		}
     },
 	
-	setStereotype: function(stereo) {
-        this.set('stereotype', stereo);
-    },
-	
-	getStereotypeName: function() {
-        return String(this.get('stereotype'));
-    },
-	
-	isShareable: function() {
-        return this.get('shareable');
-    },
-	
-	isPartEssential: function() {
-        return this.get('essentialPart');
-    },
-	
-	isWholeImmutable: function() {
-        return this.get('immutableWhole');
-    },
-	
-	isPartInseparable: function() {
-        return this.get('inseparablePart');
-    },
-
-	isPartImmutable: function() {
-        return this.get('immutablePart');
-    },
-	
-	getFullLabelName: function(){
-		return this.getName()+"\n"+this.getStereotype()
-	},
+	setStereotype: function(stereo) { this.set('stereotype', stereo); },	
+	getStereotypeName: function() { return String(this.get('stereotype')); },	
+	isShareable: function() { return this.get('shareable'); },	
+	isPartEssential: function() { return this.get('essentialPart'); },	
+	isWholeImmutable: function() { return this.get('immutableWhole'); },	
+	isPartInseparable: function() { return this.get('inseparablePart'); },
+	isPartImmutable: function() { return this.get('immutablePart'); },	
+	getFullLabelName: function(){ return this.getName()+"\n"+this.getStereotype() },
 	
 	updateStereotypeLabel: function(){					
 		var txt = this.getStereotype();
@@ -95,56 +72,6 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
         });	
 	},
 	
-	dragTruthMaker: function(canvas, evt){
-		var graph = canvas.getGraph();
-		var paper = canvas.getPaper();
-		this.derivation = new joint.shapes.ontouml.Relationship({
-			stereotype:'derivation',
-			source: { x: midPoint(graph, this).x, y:midPoint(graph, this).y },			
-		});
-		this.derivation.set('target',paper.snapToGrid({x: evt.clientX, y: evt.clientY}));
-		graph.addCell(this.derivation, {validation: false});
-		var linkView = paper.findViewByModel(this.derivation);
-		linkView.startArrowheadMove("target");
-		$("body").mouseup((function(evt){		
-			linkView.pointerup(evt);
-			$("body").unbind();
-			this.derivation.set('source',{ x: midPoint(graph, this).x, y:midPoint(graph, this).y });
-		}).bind(this));
-		$("body").mousemove(function(evt){
-			var coords = paper.snapToGrid({
-				x: evt.clientX,
-				y: evt.clientY
-			});
-			linkView.pointermove(evt, coords.x, coords.y)
-		});	
-		graph.getCell(this.get('source').id).on('add change:position', function(){
-			this.derivation.set('source', { x: midPoint(graph, this).x, y: midPoint(graph, this).y });
-		}, this);
-		graph.getCell(this.get('target').id).on('add change:position', function(){
-			this.derivation.set('source', { x: midPoint(graph, this).x, y: midPoint(graph, this).y });
-		}, this);
-	},
-	
-	setTruthMaker: function(canvas, truthMakerId){
-		if(truthMakerId!=null){
-			var graph = canvas.getGraph();
-			var paper = canvas.getPaper();
-			this.derivation = new joint.shapes.ontouml.Relationship({
-				stereotype:'derivation',
-				source: { x: midPoint(graph, this).x, y:midPoint(graph, this).y },
-				target: { id: truthMakerId },
-			});
-			graph.getCell(this.get('source').id).on('add change:position', function(){
-				this.derivation.set('source', { x: midPoint(graph, this).x, y: midPoint(graph, this).y });
-			}, this);
-			graph.getCell(this.get('target').id).on('add change:position', function(){
-				this.derivation.set('source', { x: midPoint(graph, this).x, y: midPoint(graph, this).y });
-			}, this);
-			graph.addCells([this.derivation]);
-		}	
-	},		
-		
 	updateShape: function(){
 		if(this.getStereotypeName().toLowerCase()== 'componentof' || this.getStereotypeName().toLowerCase()== 'memberof'
 		|| this.getStereotypeName().toLowerCase()== 'subcollectionof' || this.getStereotypeName().toLowerCase()== 'subquantityof'
@@ -162,20 +89,16 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 		}	
 	},
 	
-	initialize: function() {
-		
-		joint.shapes.mcore.MRelationship.prototype.initialize.apply(this, arguments);
-		
-		this.updateShape();
-				
-		this.on('add change:stereotype',function() { this.updateStereotypeLabel(); this.updateShape(); }, this);
-		
+	initialize: function() {		
+		joint.shapes.mcore.MRelationship.prototype.initialize.apply(this, arguments);		
+		this.updateShape();				
+		this.on('add change:stereotype',function() { this.updateStereotypeLabel(); this.updateShape(); }, this);		
 		this.on('add change:essentialPart change:immutablePart change:immutableWhole change:inseparablePart', 
 		function() { this.updateMetaAttributeLabels(); }, this);
     },	
 });
 
-/** OntoUML DataType */
+/** DataType */
 joint.shapes.ontouml.DataType = joint.shapes.mcore.MDataType.extend({
 
     defaults: joint.util.deepSupplement({
@@ -183,9 +106,7 @@ joint.shapes.ontouml.DataType = joint.shapes.mcore.MDataType.extend({
         stereotype: []
     }, joint.shapes.mcore.MDataType.prototype.defaults),
 	
-	getStereotypeName: function() {
-        return this.get('stereotype');
-    },
+	getStereotypeName: function() { return this.get('stereotype'); },
 	
 	getFullName: function() {
 		if(this.get('stereotype').length > 0){
@@ -196,7 +117,7 @@ joint.shapes.ontouml.DataType = joint.shapes.mcore.MDataType.extend({
     }
 });
 
-/** OntoUML Class */
+/** Class */
 joint.shapes.ontouml.Class = joint.shapes.mcore.MClass.extend({
 
     defaults: joint.util.deepSupplement({
@@ -204,9 +125,7 @@ joint.shapes.ontouml.Class = joint.shapes.mcore.MClass.extend({
         stereotype: []
     }, joint.shapes.mcore.MClass.prototype.defaults),
 	
-	getStereotypeName: function() {
-        return this.get('stereotype');
-    },
+	getStereotypeName: function() { return this.get('stereotype'); },
 	
 	getFullName: function() {
 		if(this.get('stereotype').length > 0){

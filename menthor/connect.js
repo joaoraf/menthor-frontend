@@ -88,5 +88,5 @@ function Connect(){
 			});
 			linkView.pointermove(evt, coords.x, coords.y)
 		});		
-	};
+	};	
 }

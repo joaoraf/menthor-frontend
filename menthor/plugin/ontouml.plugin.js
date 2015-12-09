@@ -75,7 +75,7 @@ function OntoUMLRightClickContextMenu(){
 	this.derivedFrom = function(evt, cellView){
 		if(cellView.model instanceof joint.shapes.ontouml.Relationship){
 			if(cellView.model.getStereotypeName()=="material"){					
-				cellView.model.dragTruthMaker(this.canvas, evt);
+				this.canvas.dragDerivation(cellView.model, evt);
 			}
 		}
 	}
@@ -88,6 +88,60 @@ function OntoUMLRightClickContextMenu(){
 		}
 		return items;
 	}	
+}
+
+extend(OntoUMLCanvas, Canvas);
+function OntoUMLCanvas(){
+
+	this.setDerivation = function(material, truthMakerId){		
+		if(truthMakerId!=null){
+			var graph = this.getGraph();
+			var paper = this.getPaper();
+			material.set('derivation', new joint.shapes.ontouml.Relationship({
+				stereotype:'derivation',
+				source: { x: midPoint(graph, material).x, y:midPoint(graph, material).y },
+				target: { id: truthMakerId },
+			}));
+			graph.getCell(material.get('source').id).on('add change:position', function(){
+				material.get('derivation').set('source', { x: midPoint(graph, material).x, y: midPoint(graph, material).y });
+			});
+			graph.getCell(material.get('target').id).on('add change:position', function(){
+				material.get('derivation').set('source', { x: midPoint(graph, material).x, y: midPoint(graph, material).y });
+			});
+			graph.addCells([material.get('derivation')]);
+		}	
+	};		
+			
+	this.dragDerivation = function(material, evt){
+		var graph = this.getGraph();
+		var paper = this.getPaper();
+		material.set('derivation', new joint.shapes.ontouml.Relationship({
+			stereotype:'derivation',
+			source: { x: midPoint(graph, material).x, y:midPoint(graph, material).y },			
+		}));
+		material.get('derivation').set('target',paper.snapToGrid({x: evt.clientX, y: evt.clientY}));
+		graph.addCell(material.get('derivation'), {validation: false});
+		var linkView = paper.findViewByModel(material.get('derivation'));
+		linkView.startArrowheadMove("target");
+		$("body").mouseup(function(evt){		
+			linkView.pointerup(evt);
+			$("body").unbind();
+			material.get('derivation').set('source',{ x: midPoint(graph, material).x, y:midPoint(graph, material).y });
+		});
+		$("body").mousemove(function(evt){
+			var coords = paper.snapToGrid({
+				x: evt.clientX,
+				y: evt.clientY
+			});
+			linkView.pointermove(evt, coords.x, coords.y)
+		});	
+		graph.getCell(material.get('source').id).on('add change:position', function(){
+			material.get('derivation').set('source', { x: midPoint(graph, material).x, y: midPoint(graph, material).y });
+		});
+		graph.getCell(material.get('target').id).on('add change:position', function(){
+			material.get('derivation').set('source', { x: midPoint(graph, material).x, y: midPoint(graph, material).y });
+		});
+	};
 }
 
 //=====================================================
@@ -140,5 +194,5 @@ function runningExample(canvas){
 	canvas.getGraph().addCells([forest, tree, entity, color, link, link2, material, genSet]);
 	
 	//workaraound to link genSets to its generalizations
-	genSet.setGeneralizations(canvas, [link2]);			
+	//genSet.setGeneralizations(canvas, [link2]);			
 }
