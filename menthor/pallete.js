@@ -1,7 +1,4 @@
 
-/** 
-  * It requires a div in the main html code to put the joint paper regarding the toolbox (e.g. '<div/> class=pallete').
-  */
 function Pallete(){
 	
 	this.language = "MCore";
@@ -38,7 +35,9 @@ function Pallete(){
 	this.elements = function(){
 		var class_ = this.createElement(joint.shapes.mcore.MClass,'Class',10,10,null);
 		var dataType = this.createElement(joint.shapes.mcore.MDataType,'DataType',110, 10, null);	
-		return [class_, dataType]
+		var genset = this.createElement(joint.shapes.mcore.MGeneralizationSet,'',10, 60, null);
+		genset.set('size',{width: 195, height: 20});
+		return [class_, dataType, genset]
 	};
 		
 	this.createElement = function (class_, name, x, y, stereotype) {

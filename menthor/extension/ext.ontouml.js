@@ -33,7 +33,7 @@ function OntoUMLPallete(){
 }
 	
 	
-extend(OntoUMLConnect,Connect);
+extend(OntoUMLConnect,ConnectContextMenu);
 function OntoUMLConnect(){
 	
 	//@Override
@@ -75,7 +75,7 @@ function OntoUMLRightClickContextMenu(){
 	this.derivedFrom = function(evt, cellView){
 		if(cellView.model instanceof joint.shapes.ontouml.Relationship){
 			if(cellView.model.getStereotypeName()=="material"){					
-				this.canvas.dragDerivation(cellView.model, evt);
+				this.canvas.dragDerivation(cellView, evt);
 			}
 		}
 	}
@@ -93,40 +93,40 @@ function OntoUMLRightClickContextMenu(){
 extend(OntoUMLCanvas, Canvas);
 function OntoUMLCanvas(){
 
-	this.setDerivation = function(material, truthMakerId){		
+	this.setDerivation = function(materialView, truthMakerId){		
 		if(truthMakerId!=null){
 			var graph = this.getGraph();
 			var paper = this.getPaper();
-			material.set('derivation', new joint.shapes.ontouml.Relationship({
+			materialView.model.set('derivation', new joint.shapes.ontouml.Relationship({
 				stereotype:'derivation',
-				source: { x: midPoint(graph, material).x, y:midPoint(graph, material).y },
+				source: midPoint(materialView),
 				target: { id: truthMakerId },
 			}));
-			graph.getCell(material.get('source').id).on('add change:position', function(){
-				material.get('derivation').set('source', { x: midPoint(graph, material).x, y: midPoint(graph, material).y });
+			materialView.model.on('add change:vertices change:router', function(){
+				materialView.model.get('derivation').set('source',midPoint(materialView));				
 			});
-			graph.getCell(material.get('target').id).on('add change:position', function(){
-				material.get('derivation').set('source', { x: midPoint(graph, material).x, y: midPoint(graph, material).y });
+			graph.getCell(materialView.model.get('target').id).on('add change:position', function(){
+				materialView.model.get('derivation').set('source', midPoint(materialView));
 			});
-			graph.addCells([material.get('derivation')]);
+			graph.addCells([materialView.model.get('derivation')]);
 		}	
 	};		
 			
-	this.dragDerivation = function(material, evt){
+	this.dragDerivation = function(materialView, evt){
 		var graph = this.getGraph();
 		var paper = this.getPaper();
-		material.set('derivation', new joint.shapes.ontouml.Relationship({
+		materialView.model.set('derivation', new joint.shapes.ontouml.Relationship({
 			stereotype:'derivation',
-			source: { x: midPoint(graph, material).x, y:midPoint(graph, material).y },			
+			source: midPoint(materialView),			
 		}));
-		material.get('derivation').set('target',paper.snapToGrid({x: evt.clientX, y: evt.clientY}));
-		graph.addCell(material.get('derivation'), {validation: false});
-		var linkView = paper.findViewByModel(material.get('derivation'));
+		materialView.model.get('derivation').set('target',paper.snapToGrid({x: evt.clientX, y: evt.clientY}));
+		graph.addCell(materialView.model.get('derivation'), {validation: false});
+		var linkView = paper.findViewByModel(materialView.model.get('derivation'));
 		linkView.startArrowheadMove("target");
 		$("body").mouseup(function(evt){		
 			linkView.pointerup(evt);
 			$("body").unbind();
-			material.get('derivation').set('source',{ x: midPoint(graph, material).x, y:midPoint(graph, material).y });
+			materialView.model.get('derivation').set('source',midPoint(materialView));
 		});
 		$("body").mousemove(function(evt){
 			var coords = paper.snapToGrid({
@@ -134,12 +134,16 @@ function OntoUMLCanvas(){
 				y: evt.clientY
 			});
 			linkView.pointermove(evt, coords.x, coords.y)
-		});	
-		graph.getCell(material.get('source').id).on('add change:position', function(){
-			material.get('derivation').set('source', { x: midPoint(graph, material).x, y: midPoint(graph, material).y });
 		});
-		graph.getCell(material.get('target').id).on('add change:position', function(){
-			material.get('derivation').set('source', { x: midPoint(graph, material).x, y: midPoint(graph, material).y });
+		materialView.model.on('add change:vertices change:router', function(){
+			console.log(materialView.convertToPath().sample());
+			materialView.model.get('derivation').set('source',midPoint(materialView));				
+		});
+		graph.getCell(materialView.model.get('source').id).on('add change:position', function(){
+			materialView.model.get('derivation').set('source',midPoint(materialView));
+		});
+		graph.getCell(materialView.model.get('target').id).on('add change:position', function(){
+			materialView.model.get('derivation').set('source', midPoint(materialView));
 		});
 	};
 }

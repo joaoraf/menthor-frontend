@@ -1,9 +1,5 @@
 
-/** 
-  * It requires two div's in the main html code, one for the connect action (e.g. '<div/> class=connect') 
-  * and the other for the popup context menu (e.g. '<div/> class=contextmenu').
-  */
-function Connect(){
+function ConnectContextMenu(){
 		
 	this.language = "MCore"
 	this.map = {};

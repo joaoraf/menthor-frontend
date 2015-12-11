@@ -82,11 +82,13 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 			this.attr('.marker-source', { d: 'M 20 8 L 10 0 L 0 8 L 10 16 z', fill: color});			
 		}else if(this.getStereotypeName().toLowerCase()=='derivation'){				
 			this.attr('.connection', { 'stroke-dasharray': '5,5' });		
-			this.attr('.marker-target', { d: 'M-5,0a5,5 0 1,0 10,0a5,5 0 1,0 -10,0', fill: color});	
+			this.attr('.marker-target', { d: 'M-5,0a5,5 0 1,0 10,0a5,5 0 1,0 -10,0', fill: color});
+			this.attr('.marker-vertices', { display : 'none' });
+            this.attr('.marker-arrowheads', { display: 'none' });
+            this.attr('.connection-wrap', { display: 'none' });
+            this.attr('.link-tools', { display : 'none' });			
 			this.toBack();
-		} else if(this.getStereotypeName().toLowerCase=='material'){
-			setTruthMaker(null);
-		}	
+		} 	
 	},
 	
 	initialize: function() {		

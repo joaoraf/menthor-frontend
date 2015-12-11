@@ -1,7 +1,4 @@
 
-/** 
-  * It requires a div in the main html code to put the joint paper (e.g. '<div/> class=canvas').
-  */
 function Canvas(){
 	
 	this.graph = null;
@@ -114,22 +111,27 @@ function Canvas(){
 		});
 	}
 	
-	this.dragGenToGenSet = function(gen, evt){
+	this.dragGenToGenSet = function(genView, evt){
 		var graph = this.getGraph();
 		var paper = this.getPaper();
-		gen.set('link', new joint.dia.Link({						 
-			source: { x: midPoint(graph, gen).x, y:midPoint(graph, gen).y },			
+		if(!_.isEmpty(genView.model.get('link'))) graph.getCell(genView.model.get('link').id).remove();
+		genView.model.set('link', new joint.dia.Link({						 
+			source: midPoint(genView),						
 		}));
-		gen.get('link').attr('.connection', { 'stroke-dasharray': '5,5' });	
-		gen.get('link').set('target',paper.snapToGrid({x: evt.clientX, y: evt.clientY}));
-		graph.addCell(gen.get('link'), {validation: false});
-		var linkView = paper.findViewByModel(gen.get('link'));
+		genView.model.get('link').attr('.marker-vertices', { display : 'none' });
+        genView.model.get('link').attr('.marker-arrowheads', { display: 'none' });
+        genView.model.get('link').attr('.connection-wrap', { display: 'none' });
+        genView.model.get('link').attr('.link-tools', { display : 'none' });
+		genView.model.get('link').attr('.connection', { 'stroke-dasharray': '5,5' });	
+		genView.model.get('link').set('target',paper.snapToGrid({x: evt.clientX, y: evt.clientY}));
+		graph.addCell(genView.model.get('link'), {validation: false});
+		var linkView = paper.findViewByModel(genView.model.get('link'));
 		linkView.startArrowheadMove("target");
 		$("body").mouseup(function(evt){		
 			linkView.pointerup(evt);
 			$("body").unbind();
-			gen.get('link').set('source',{ x: midPoint(graph, gen).x, y:midPoint(graph, gen).y });
-			gen.get('link').attr('./display', 'none') //hide the line	
+			genView.model.get('link').set('source',midPoint(genView));
+			genView.model.get('link').attr('./display', 'none') //hide the line	
 		});
 		$("body").mousemove(function(evt){
 			var coords = paper.snapToGrid({
@@ -138,11 +140,11 @@ function Canvas(){
 			});
 			linkView.pointermove(evt, coords.x, coords.y)
 		});	
-		graph.getCell(gen.get('source').id).on('add change:position', function(){
-			gen.get('link').set('source', { x: midPoint(graph, gen).x, y: midPoint(graph, gen).y });
+		graph.getCell(genView.model.get('source').id).on('add change:position', function(){
+			genView.model.get('link').set('source', midPoint(genView));
 		});
-		graph.getCell(gen.get('target').id).on('add change:position', function(){
-			gen.get('link').set('source', { x: midPoint(graph, gen).x, y: midPoint(graph, gen).y });
+		graph.getCell(genView.model.get('target').id).on('add change:position', function(){
+			genView.model.get('link').set('source', midPoint(genView));
 		});
 	};
 }

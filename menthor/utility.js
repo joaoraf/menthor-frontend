@@ -13,16 +13,31 @@ function inArray(array, elem){
 	return false;
 }
 
-function midPoint(graph, link){
-	if(link!=null){
-		var srcCenter = graph.getCell(link.get('source').id).getBBox().center();		
-		var trgCenter = graph.getCell(link.get('target').id).getBBox().center();
-		var midPoint = g.line(srcCenter, trgCenter).midpoint();
-		return midPoint;
-	}
-	return {x: 10, y: 10} ;
+
+function midPoint(linkView){
+	if(linkView==null && _.isEmpty(linkView)) return {x: 10, y: 10};
+	var segments = lineSegments(linkView);
+	var midIdx = Math.floor(segments.length/2);
+	var midPoint = segments[midIdx].midpoint();
+	return midPoint;					
 }
-	
+
+function lineSegments(linkView){
+	var points = []
+	points = points.concat(sourcePoint(linkView));
+	if(linkView.model.get('vertices')!=null && linkView.model.get('vertices').length>0) { points = points.concat(linkView.model.get('vertices')); }
+	points = points.concat(targetPoint(linkView));
+	var segments = []
+	var idx = 0;
+	for(idx = 1; idx < points.length; idx++){
+		var start = points[idx-1];
+		var end = points[idx];
+		var line = g.line(start, end);
+		segments.push(line);
+	};	
+	return segments;
+}
+
 /** Get source point of a link view */
 function sourcePoint(linkView){
 	var link = linkView.model;

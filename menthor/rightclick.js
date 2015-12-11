@@ -1,10 +1,7 @@
+
 function RightClickContextMenu(){
 	
 	this.canvas = null;
-		
-	//=================
-	//Action
-	//=================
 	
 	this.action = function (evt, key, cellView){		
 		if(key!=null && key!=""){
@@ -14,13 +11,9 @@ function RightClickContextMenu(){
 			if(key==="verticaltree") verticalTreeRouter(this.canvas.getGraph(), cellView); 
 			if(key==="horizontaltree") horizontalTreeRouter(this.canvas.getGraph(), cellView);
 			if(key==="direct") cellView.model.set('vertices',{});
-			if(key==="linktogenset") this.canvas.dragGenToGenSet(cellView.model, evt);
+			if(key==="linktogenset") this.canvas.dragGenToGenSet(cellView, evt);
 		}
 	};
-
-	//=================
-	//Items 
-	//=================
 	
 	this.getItems = function(cellView){
 		var items = {}		
@@ -42,11 +35,7 @@ function RightClickContextMenu(){
 			}	  
 		}	
 	};
-	
-	//=================
-	//Install Context Menu
-	//=================
-	
+		
 	this.installOn = function ($contextMenuId, canvas){
 		this.canvas = canvas;
 		this.canvas.getPaper().$el.on('contextmenu', (function(evt) { 

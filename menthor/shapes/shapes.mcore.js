@@ -1,6 +1,23 @@
 joint.shapes.mcore = {};
 
-/** MGeneralizationSet */
+/** ===========================
+  * MGeneralizationSet 
+  * =========================== */
+
+joint.shapes.mcore.MGeneralizationSetView = joint.dia.ElementView.extend({
+	
+    initialize: function() {
+        joint.dia.ElementView.prototype.initialize.apply(this, arguments);   
+		alert("Creating Gen Set View...")
+    },
+	
+	remove: function(){
+		 // call parent's remove first
+        joint.dia.ElementView.prototype.remove.apply(this, arguments);
+		alert("Removing Gen Set...")
+	}
+});
+
 joint.shapes.mcore.MGeneralizationSet = joint.shapes.basic.Rect.extend({
 	
 	defaults: joint.util.deepSupplement({
@@ -66,7 +83,10 @@ joint.shapes.mcore.MGeneralizationSet = joint.shapes.basic.Rect.extend({
 	},	
 });
 
-/** MGeneralization */
+/** ===========================
+  * MGeneralization 
+  * =========================== */
+  
 joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
 	defaults: joint.util.deepSupplement({  
 		type: 'joint.shapes.mcore.MGeneralization',
@@ -86,7 +106,10 @@ joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
 	getSpecific: function(){ return this.get('source') },
 });
 
-/** M-Relationship */
+/** ===========================
+  * MRelationship 
+  * =========================== */
+  
 joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
     defaults: joint.util.deepSupplement({ 		
 		type: 'joint.shapes.mcore.MRelationship',
@@ -180,7 +203,10 @@ joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
 	},
 });
 
-/** MType */
+/** ===========================
+  * MType 
+  * =========================== */
+  
 joint.shapes.mcore.MType = joint.shapes.uml.Class.extend({
 
     defaults: joint.util.deepSupplement({
@@ -255,12 +281,18 @@ joint.shapes.mcore.MType = joint.shapes.uml.Class.extend({
 });
 
 
-/** MClass */
+/** ===========================
+  * MClass 
+  * =========================== */
+  
 joint.shapes.mcore.MClass = joint.shapes.mcore.MType.extend({
 	type: 'joint.shapes.mcore.MClass',
 });
 
-/** MDataType */
+/** ===========================
+  * MDataType 
+  * =========================== */
+  
 joint.shapes.mcore.MDataType = joint.shapes.mcore.MType.extend({
 	type: 'joint.shapes.mcore.MDataType',
 });
