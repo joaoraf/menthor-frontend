@@ -1,3 +1,3 @@
-## Web Editor for the OntoUML 2.0 Infrastructure
+## Menthor Web Editor
 
 Just type "python -m http.server" on the terminal and access it with "localhost:8000/index.html"
