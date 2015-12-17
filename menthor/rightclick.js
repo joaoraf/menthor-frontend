@@ -7,7 +7,7 @@ function RightClickContextMenu(){
 		if(key!=null && key!=""){
 			if(key==="manhatan") cellView.model.set('router', { name: 'manhattan' });
 			if(key==="metro") cellView.model.set('router', { name: 'metro' });
-			if(key==="orthogonal") cellView.model.set('router', { name: 'orthogonal' });
+			if(key==="orthogonal") cellView.model.set('router', { name: 'orthogonal' });			
 			if(key==="verticaltree") verticalTreeRouter(this.canvas.getGraph(), cellView); 
 			if(key==="horizontaltree") horizontalTreeRouter(this.canvas.getGraph(), cellView);
 			if(key==="direct") cellView.model.set('vertices',{});
@@ -28,7 +28,7 @@ function RightClickContextMenu(){
 			"items": {
 				"direct": {name: "Direct"},
 				"verticaltree": {name: "Vertical Tree" }, 
-				"horizontaltree": {name: "Horizontal Tree" },
+				"horizontaltree": {name: "Horizontal Tree" },				
 				"orthogonal" : {name: "Orthogonal"}, 
 				"manhatan": {name: "Manhatan"}, 
 				"metro": {name: "Metro"}

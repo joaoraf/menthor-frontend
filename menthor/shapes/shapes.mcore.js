@@ -4,20 +4,6 @@ joint.shapes.mcore = {};
   * MGeneralizationSet 
   * =========================== */
 
-joint.shapes.mcore.MGeneralizationSetView = joint.dia.ElementView.extend({
-	
-    initialize: function() {
-        joint.dia.ElementView.prototype.initialize.apply(this, arguments);   
-		alert("Creating Gen Set View...")
-    },
-	
-	remove: function(){
-		 // call parent's remove first
-        joint.dia.ElementView.prototype.remove.apply(this, arguments);
-		alert("Removing Gen Set...")
-	}
-});
-
 joint.shapes.mcore.MGeneralizationSet = joint.shapes.basic.Rect.extend({
 	
 	defaults: joint.util.deepSupplement({

@@ -90,6 +90,26 @@ function OntoUMLRightClickContextMenu(){
 	}	
 }
 
+extend(OntoUMLEdition, Edition);
+function OntoUMLEdition(){
+	
+	/** override it to delete the derivation if the material is deleted */
+	this.deleteCell = function(cellView){	
+		var links = this.canvas.getGraph().getConnectedLinks(cellView.model);		
+		_.each(links, (function(link){			
+			if(link instanceof joint.shapes.ontouml.Relationship){
+				if(link.getStereotypeName()=="material"){					
+					if(!_.isEmpty(link.get('derivation'))){
+						var derivationView = this.canvas.getPaper().findViewByModel(link.get('derivation'));
+						this.$super.deleteCell.call(this,derivationView);						
+					}
+				}
+			}
+		}).bind(this));
+		this.$super.deleteCell.call(this,cellView);
+	};
+}
+
 extend(OntoUMLCanvas, Canvas);
 function OntoUMLCanvas(){
 
@@ -136,7 +156,6 @@ function OntoUMLCanvas(){
 			linkView.pointermove(evt, coords.x, coords.y)
 		});
 		materialView.model.on('add change:vertices change:router', function(){
-			console.log(materialView.convertToPath().sample());
 			materialView.model.get('derivation').set('source',midPoint(materialView));				
 		});
 		graph.getCell(materialView.model.get('source').id).on('add change:position', function(){

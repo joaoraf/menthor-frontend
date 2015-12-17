@@ -33,26 +33,12 @@
 	
 	<div id="tools">
 		<div id="logo"></div>	
-		<br />		
 		<div id="pallete"></div>			
 	</div>
 
-	<div id="diagram">
-		<div id="editor">
-			<div class="resize nw"></div>
-			<div class="resize n"></div>
-			<div class="resize ne"></div>
-			<div class="resize e"></div>
-			<div class="resize se"></div>
-			<div class="resize s"></div>
-			<div class="resize sw"></div>
-			<div class="resize w"></div>
-			<div class="tools delete" title="Delete"></div>
-			<div class="tools duplicate" title="Duplicate"></div>
-			<div class="tools connect" title="Connect"></div>			
-		</div>
-		<div id="selection-wrapper"> </div>
-		<div class="contextmenu"></div>
+	<div class="contextmenu"></div>
+	
+	<div id="diagram">						
 		<div id="canvas"></div>
 	</div>
     
@@ -60,7 +46,7 @@
 	
 	//create a global pallete for the entire application
 	var pallete = new OntoUMLPallete();	
-	pallete.installOnDiv("pallete");
+	pallete.installOn("pallete");
 	
 	//create a diagram at the 'canvas' html element
 	var canvas1 = new OntoUMLCanvas();
@@ -71,13 +57,13 @@
 	//config canvas...
 	//==============================
 	//attach the pallete to that diagram	
-	pallete.enableDndTo(canvas1);		
+	pallete.enableDndOn(canvas1);		
 	//install edition/selection on that diagram
-	var edition = new Edition();
+	var edition = new OntoUMLEdition();
 	edition.installOn(canvas1);
 	//install connections suggestions on that diagram
 	var sugg = new OntoUMLConnect();
-	sugg.installOnDivs("connect","contextmenu");
+	sugg.installOn("connect","contextmenu");
 	sugg.setCanvas(canvas1);
 	
 	//===============================

@@ -360,8 +360,7 @@ button:hover
    border: 1px solid blue;
    margin-top: -4px;
    margin-left: -4px;
-   box-shadow: 2px 2px 5px blue;
-      	
+   box-shadow: 1px 1px 1px blue;      	
    display: none;	
    z-index: 1;	
    pointer-events: none;

@@ -5,6 +5,9 @@ function ConnectContextMenu(){
 	this.map = {};
 	this.canvas = null;
 	
+	this.setCanvas = function(canvas){ this.canvas = canvas; };	
+	this.getCanvas = function(){ return this.canvas; };
+	
 	this.defaultConnections = function(){
 		this.map = { 'Generalization': 'joint.shapes.mcore.MGeneralization', 'Relationship': 'joint.shapes.mcore.MRelationship'}
 	};
@@ -16,16 +19,8 @@ function ConnectContextMenu(){
 		});
 		return conns
 	};
-	
-	this.setCanvas = function(canvas){
-		this.canvas = canvas;
-	};
-	
-	this.getCanvas = function(){
-		return this.canvas;
-	};
-	
-	this.installOnDivs = function($connectId, $contextMenuId){
+		
+	this.installOn = function($connectId, $contextMenuId){
 		this.defaultConnections();
 		$("."+$connectId).mousedown((function(evt){
 			evt.preventDefault();

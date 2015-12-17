@@ -6,6 +6,14 @@ function extend(Child, Parent) {
   Child.prototype.constructor = Child
 }
 
+function remove(array, item) {
+  for(var i = array.length; i--;) {
+	  if(array[i] === item) {
+		  array.splice(i, 1);
+	  }
+  }
+}
+  
 function inArray(array, elem){
 	_.each(array, function(x){
 		if(x===elem) return true;

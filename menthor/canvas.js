@@ -1,19 +1,26 @@
 
 function Canvas(){
 	
-	this.graph = null;
-	this.htmlElemId = null;
+	this.$id = null;
+	this.graph = null;	
 	this.paper = null;
 	
-	this.installOn = function(htmlElemId){
-		this.htmlElemId = htmlElemId;
+	this.parent = function(){ return $('#'+this.$id).parent(); };	
+	this.el = function(){ return $('#'+this.$id); };	
+	this.id = function(){ return this.$id; };	
+	
+	this.getGraph = function(){ return this.graph; };	
+	this.getPaper = function(){ return this.paper; }
+		
+	this.installOn = function($id){
+		this.$id = $id;
 		this.graph = new joint.dia.Graph();
 		this.paper = new joint.dia.Paper({
-			el: this.htmlElem(),		
+			el: this.el(),		
 			gridSize: 1,
 			model: this.graph,		
-			width: this.parentHtmlElem().width()*2,
-			height: this.parentHtmlElem().height()*2,
+			width: this.parent().width()*2,
+			height: this.parent().height()*2,
 			
 			//switch creating vertices with single click to double click
 			linkView: joint.dia.LinkView.extend({
@@ -32,27 +39,7 @@ function Canvas(){
 			}
 		});		
 	};
-
-	this.parentHtmlElem = function(){
-		return $('#'+this.htmlElemId).parent();
-	};
 	
-	this.htmlElem = function(){
-		return $('#'+this.htmlElemId);
-	};
-	
-	this.getHtmlElemId = function(){
-		return this.htmlElemId;
-	};
-	
-	this.getGraph = function(){
-		return this.graph;
-	};
-	
-	this.getPaper = function(){
-		return this.paper;
-	}
-		
 	this.forbidInteractionsOnAllLinks = function(){
 		_.each(this.graph.getLinks(), function(link){
 			var linkView = this.paper.findViewByModel(link);
@@ -74,7 +61,10 @@ function Canvas(){
 		this.paper.on('cell:pointerup ', function(cellView, evt, x, y) { 
 			if(cellView.model.isLink() && cellView.targetView == null){
 				if(recordedTgt == null){
-					cellView.remove();
+					recordedTgt = cellView.model.get('target');
+					if(recordedTgt==null) {						
+						cellView.remove();
+					}
 				}else{
 					cellView.model.set('target', recordedTgt);
 					recordedTgt = null;
@@ -82,7 +72,10 @@ function Canvas(){
 			}
 			if(cellView.model.isLink() && cellView.sourceView == null){
 				if(recordedSrc == null){
-					cellView.remove();
+					recordedSrc = cellView.model.get('source');
+					if(recordedSrc==null) {						
+						cellView.remove();
+					}
 				}else{
 					cellView.model.set('source', recordedSrc);
 					recordedSrc = null;

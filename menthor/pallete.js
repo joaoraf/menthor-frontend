@@ -4,27 +4,19 @@ function Pallete(){
 	this.language = "MCore";
 	this.graph = null;
 	this.paper = null;
-	this.htmlElemId = null;
+	this.$id = null;
 			
-	this.parentHtmlElem = function(){
-		return $('#'+this.htmlElemId).parent();
-	};
+	this.parent = function(){ return $('#'+this.$id).parent(); };	
+	this.el = function(){ return $('#'+this.$id) };	
+	this.id = function(){ return $id; };
 	
-	this.htmlElem = function(){
-		return $('#'+this.htmlElemId)
-	};
-	
-	this.getHtmlElemId = function(){
-		return htmlElemId;
-	};
-	
-	this.installOnDiv = function(htmlElemId){	
-		this.htmlElemId = htmlElemId;
+	this.installOn = function($id){	
+		this.$id = $id;
 		this.graph = new joint.dia.Graph;
 		this.paper = new joint.dia.Paper({
-			el: this.htmlElem(),	
-			width: this.htmlElem().width(),
-			height: this.htmlElem().height(),
+			el: this.el(),	
+			width: this.el().width(),
+			height: this.el().height(),
 			gridSize: 1,
 			interactive: false,
 			model: this.graph
@@ -48,7 +40,7 @@ function Pallete(){
 		});
 	};
 	
-	this.enableDndTo = function(canvas){
+	this.enableDndOn = function(canvas){
 		this.paper.on('cell:pointerdown', (function(cellView, evt, x, y){		
 			var fake = $("<div class='dnd'><div id='dnd'></div></div>").appendTo("body").css("left", x+"px").css("top", y+"px");	
 			var fakeElem = this.createElement(eval(cellView.model.get("type")), cellView.model.get("name"), 0, 0, cellView.model.get("stereotype"));
@@ -65,8 +57,8 @@ function Pallete(){
 				fake.css("left", (evt.pageX-45)+"px").css("top", (evt.pageY-30)+"px");
 			});
 			$("body").mouseup((function(evt) {
-				if(evt.pageX-this.parentHtmlElem().width()-40 > 0){//if we are on target paper (canvas) we add the new element {
-					var elem = this.createElement(eval(cellView.model.get("type")), cellView.model.get("name"), evt.pageX-this.parentHtmlElem().width()-40, evt.pageY-40, cellView.model.get("stereotype"));				
+				if(evt.pageX-this.parent().width()-40 > 0){//if we are on target paper (canvas) we add the new element {
+					var elem = this.createElement(eval(cellView.model.get("type")), cellView.model.get("name"), evt.pageX-this.parent().width()-40, evt.pageY-40, cellView.model.get("stereotype"));				
 					canvas.getGraph().addCell(elem);
 					$("body").unbind("mousemove");
 					$("body").unbind("mouseup");			    	
