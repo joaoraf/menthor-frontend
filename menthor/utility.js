@@ -21,6 +21,19 @@ function inArray(array, elem){
 	return false;
 }
 
+function sortNumber(a,b) {
+	return a - b;
+}
+
+function sortNumericalArray(numArray){
+	numArray.sort(sortNumber);	
+	return numArray
+}
+
+function pushAll(array, newarray){
+	array.push.apply(array, newarray);
+	return array;
+}
 
 function midPoint(linkView){
 	if(linkView==null && _.isEmpty(linkView)) return {x: 10, y: 10};
@@ -119,58 +132,4 @@ function linkDirection(link){
 	var node2 = graph.getCell(link.get('target').id);
 	var direction = getDirectionFromTo(node1, node2);
 	return direction;
-}
-
-function verticalTreeRouter(graph, linkView){
-	var link = linkView.model;
-	var node1 = graph.getCell(link.get('source').id);
-	var node2 = graph.getCell(link.get('target').id);
-	var direction = getDirectionFromTo(node1, node2);
-	if(direction=='S_N' || direction=='SE_NW' || direction=='SW_NE') {	    
-		link.set('vertices',[]);		
-		linkView.addVertex({x:centerPoint(node2).x, y: endPoint(node2).y+30});
-		linkView.addVertex({x:centerPoint(node1).x, y: endPoint(node2).y+30});		
-		linkView.update();		
-	}else if (direction=='N_S'||direction=='NW_SE'||direction=='NE_SW'){
-		link.set('vertices',[]);		
-		linkView.addVertex({x:centerPoint(node2).x, y: startPoint(node2).y-30});
-		linkView.addVertex({x:centerPoint(node1).x, y: startPoint(node2).y-30});		
-		linkView.update();		
-	}else{
-		link.set('vertices',{});
-		return;
-	}	  
-	node1.on('add change:position', function() { 
-		_.first(link.get('vertices')).x = centerPoint(node1).x;
-	}, this);
-	node2.on('add change:position', function() { 
-		_.last(link.get('vertices')).x = centerPoint(node2).x;
-	}, this);
-}
-
-function horizontalTreeRouter(graph, linkView){
-	var link = linkView.model;
-	var node1 = graph.getCell(link.get('source').id);
-	var node2 = graph.getCell(link.get('target').id);	
-	var direction = getDirectionFromTo(node1, node2);
-	if(direction=='E_W' || direction=='SE_NW' || direction=='NE_SW') {	    
-		link.set('vertices',[]);				
-		linkView.addVertex({x:endPoint(node2).x+30, y: centerPoint(node2).y});		
-		linkView.addVertex({x:endPoint(node2).x+30, y: centerPoint(node1).y});
-		linkView.update();		
-	}else if (direction=='W_E'||direction=='NW_SE'||direction=='SW_NE'){
-		link.set('vertices',[]);				
-		linkView.addVertex({x:startPoint(node2).x-30, y: centerPoint(node2).y});		
-		linkView.addVertex({x:startPoint(node2).x-30, y: centerPoint(node1).y});
-		linkView.update();		
-	}else{
-		link.set('vertices',{});
-		return;		
-	}	  
-	node1.on('add change:position', function() { 
-		_.first(link.get('vertices')).y = centerPoint(node1).y;
-	}, this);
-	node2.on('add change:position', function() { 
-		_.last(link.get('vertices')).y = centerPoint(node2).y;
-	}, this);
 }

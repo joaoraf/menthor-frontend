@@ -2,10 +2,8 @@
 extend(OntoUMLPallete,Pallete);
 function OntoUMLPallete(){
 	
-	//@Override
 	this.language = "OntoUML"
 	
-	//@Override
 	this.elements = function(){
 		var kind = this.createElement(joint.shapes.ontouml.Class,'Kind',10,10,'kind');	
 		var collective = this.createElement(joint.shapes.ontouml.Class,'Collective',110, 10, 'collective');		
@@ -32,70 +30,40 @@ function OntoUMLPallete(){
 	}		
 }
 	
-	
 extend(OntoUMLConnect,ConnectContextMenu);
 function OntoUMLConnect(){
-	
-	//@Override
-	this.language = "OntoUML"
-	
-	//@Override
-	this.defaultConnections = function(){
-		this.map = { 
-			'Generalization': 'joint.shapes.ontouml.Generalization', 
-			'Mediation': 'joint.shapes.ontouml.Relationship', 
-			'Characerization': 'joint.shapes.ontouml.Relationship', 
-			'Structuration': 'joint.shapes.ontouml.Relationship',
-			'Formal': 'joint.shapes.ontouml.Relationship', 
-			'Material': 'joint.shapes.ontouml.Relationship', 
-			'ComponentOf': 'joint.shapes.ontouml.Relationship',
-			'MemberOf': 'joint.shapes.ontouml.Relationship',
-			'SubCollectionOf': 'joint.shapes.ontouml.Relationship', 
-			'SubQuantityOf': 'joint.shapes.ontouml.Relationship',
-			'QuapartOf': 'joint.shapes.ontouml.Relationship', 
-			'Constitution': 'joint.shapes.ontouml.Relationship', 
-			'Causation': 'joint.shapes.ontouml.Relationship',
-			'Participation': 'joint.shapes.ontouml.Relationship', 
-			'SubeventOf': 'joint.shapes.ontouml.Relationship', 
-			'Temporal': 'joint.shapes.ontouml.Relationship', 
-			'InstanceOf': 'joint.shapes.ontouml.Relationship'	
-		}	
-	};	
-}
 
-extend(OntoUMLRightClickContextMenu, RightClickContextMenu);
-function OntoUMLRightClickContextMenu(){
-	
-	//@Override
-	this.action = function(evt, key, cellView){
-		this.$super.action.call(this, evt, key, cellView)
-		if(key=="derivedfrom") this.derivedFrom(evt, cellView);
-	}
-	
-	this.derivedFrom = function(evt, cellView){
-		if(cellView.model instanceof joint.shapes.ontouml.Relationship){
-			if(cellView.model.getStereotypeName()=="material"){					
-				this.canvas.dragDerivation(cellView, evt);
-			}
-		}
-	}
-	
-	//@Override	
-	this.getItems = function(cellView){
-		var items = this.$super.getItems.call(this,cellView);
-		if(cellView.model instanceof joint.shapes.ontouml.Relationship){
-			if(cellView.model.getStereotypeName()=="material") items["derivedfrom"] = { name: "Derived From"};
-		}
-		return items;
+	this.map = { 
+		'Generalization': 'joint.shapes.ontouml.Generalization', 
+		'Mediation': 'joint.shapes.ontouml.Relationship', 
+		'Characerization': 'joint.shapes.ontouml.Relationship', 
+		'Structuration': 'joint.shapes.ontouml.Relationship',
+		'Formal': 'joint.shapes.ontouml.Relationship', 
+		'Material': 'joint.shapes.ontouml.Relationship', 
+		'ComponentOf': 'joint.shapes.ontouml.Relationship',
+		'MemberOf': 'joint.shapes.ontouml.Relationship',
+		'SubCollectionOf': 'joint.shapes.ontouml.Relationship', 
+		'SubQuantityOf': 'joint.shapes.ontouml.Relationship',
+		'QuapartOf': 'joint.shapes.ontouml.Relationship', 
+		'Constitution': 'joint.shapes.ontouml.Relationship', 
+		'Causation': 'joint.shapes.ontouml.Relationship',
+		'Participation': 'joint.shapes.ontouml.Relationship', 
+		'SubeventOf': 'joint.shapes.ontouml.Relationship', 
+		'Temporal': 'joint.shapes.ontouml.Relationship', 
+		'InstanceOf': 'joint.shapes.ontouml.Relationship'	
 	}	
+		
 }
 
-extend(OntoUMLEdition, Edition);
-function OntoUMLEdition(){
+extend(OntoUMLEditor, Editor);
+function OntoUMLEditor(){	
+
+	this.connectMenu = new OntoUMLConnect();
 	
-	/** override it to delete the derivation if the material is deleted */
 	this.deleteCell = function(cellView){	
-		var links = this.canvas.getGraph().getConnectedLinks(cellView.model);		
+		/** delete the derivation if the material is deleted */
+		var links = this.canvas.getGraph().getConnectedLinks(cellView.model);	
+		if(cellView.model instanceof joint.dia.Link) links.push(cellView.model);		
 		_.each(links, (function(link){			
 			if(link instanceof joint.shapes.ontouml.Relationship){
 				if(link.getStereotypeName()=="material"){					
@@ -106,13 +74,16 @@ function OntoUMLEdition(){
 				}
 			}
 		}).bind(this));
+		/** delete cell */
 		this.$super.deleteCell.call(this,cellView);
 	};
 }
 
 extend(OntoUMLCanvas, Canvas);
 function OntoUMLCanvas(){
-
+	
+	this.editor = new OntoUMLEditor();
+	
 	this.setDerivation = function(materialView, truthMakerId){		
 		if(truthMakerId!=null){
 			var graph = this.getGraph();
@@ -165,6 +136,33 @@ function OntoUMLCanvas(){
 			materialView.model.get('derivation').set('source', midPoint(materialView));
 		});
 	};
+}
+
+extend(OntoUMLRightClickContextMenu, RightClickContextMenu);
+function OntoUMLRightClickContextMenu(){
+	
+	//@Override
+	this.action = function(evt, key, cellView){
+		this.$super.action.call(this, evt, key, cellView)
+		if(key=="derivedfrom") this.derivedFrom(evt, cellView);
+	}
+	
+	this.derivedFrom = function(evt, cellView){
+		if(cellView.model instanceof joint.shapes.ontouml.Relationship){
+			if(cellView.model.getStereotypeName()=="material"){					
+				this.canvas.dragDerivation(cellView, evt);
+			}
+		}
+	}
+	
+	//@Override	
+	this.getItems = function(cellView){
+		var items = this.$super.getItems.call(this,cellView);
+		if(cellView.model instanceof joint.shapes.ontouml.Relationship){
+			if(cellView.model.getStereotypeName()=="material") items["derivedfrom"] = { name: "Derived From"};
+		}
+		return items;
+	}	
 }
 
 //=====================================================

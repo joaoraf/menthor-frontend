@@ -5,26 +5,47 @@ function RightClickContextMenu(){
 	
 	this.action = function (evt, key, cellView){		
 		if(key!=null && key!=""){
+			if(key==="direct") cellView.model.set('vertices',{});
 			if(key==="manhatan") cellView.model.set('router', { name: 'manhattan' });
 			if(key==="metro") cellView.model.set('router', { name: 'metro' });
-			if(key==="orthogonal") cellView.model.set('router', { name: 'orthogonal' });			
-			if(key==="verticaltree") verticalTreeRouter(this.canvas.getGraph(), cellView); 
-			if(key==="horizontaltree") horizontalTreeRouter(this.canvas.getGraph(), cellView);
-			if(key==="direct") cellView.model.set('vertices',{});
-			if(key==="linktogenset") this.canvas.dragGenToGenSet(cellView, evt);
+			if(key==="orthogonal") cellView.model.set('router', { name: 'orthogonal' });						
+			if(key==="linktogenset") this.canvas.dragGenToGenSet(cellView, evt);			
+			if(key==="verticaltree") this.canvas.getEditor().verticalTreeRouter(cellView); 
+			if(key==="horizontaltree") this.canvas.getEditor().horizontalTreeRouter(cellView);						
+			if(key==="bottom") this.canvas.getEditor().alignSelectedAtBottom();
+			if(key==="top") this.canvas.getEditor().alignSelectedAtTop();
+			if(key==="left") this.canvas.getEditor().alignSelectedAtLeft();
+			if(key==="right") this.canvas.getEditor().alignSelectedAtRight();
+			if(key==="centerhorizontally") this.canvas.getEditor().alignSelectedOnCenterHorizontally();
+			if(key==="centervertically") this.canvas.getEditor().alignSelectedOnCenterVertically();
 		}
 	};
 	
 	this.getItems = function(cellView){
 		var items = {}		
-		if(cellView.model instanceof joint.shapes.mcore.MGeneralization) items["linktogenset"] = {name: "Gen Set"};
-		if(cellView.model instanceof joint.dia.Link) items["treestyle"] = treeStyle();
+		if(cellView.model instanceof joint.shapes.mcore.MGeneralization) items["linktogenset"] = {name: "Generalization Set"};
+		if(cellView.model instanceof joint.dia.Link) items["treestyle"] = treestyle();
+		if(cellView.model instanceof joint.shapes.mcore.MType) items["alignments"] = alignments();
 		return items;		
 	};
 	
-	var treeStyle = function (){
+	var alignments = function(){
 		return {
-			"name": "Tree Style", 
+			"name": "Alignments",
+			"items": {
+				"bottom": {name: "Bottom" },
+				"top": {name: "Top" },
+				"left": {name: "Left" },
+				"right": {name: "Right" },
+				"centerhorizontally": {name: "Center Horizontally" },
+				"centervertically": { name: "Center Vertically "},
+			}
+		}
+	};
+	
+	var treestyle = function (){
+		return {
+			"name": "Line Style", 
 			"items": {
 				"direct": {name: "Direct"},
 				"verticaltree": {name: "Vertical Tree" }, 

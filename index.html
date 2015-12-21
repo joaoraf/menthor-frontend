@@ -35,41 +35,31 @@
 		<div id="logo"></div>	
 		<div id="pallete"></div>			
 	</div>
-
-	<div class="contextmenu"></div>
 	
 	<div id="diagram">						
 		<div id="canvas"></div>
 	</div>
+
+	<div class="contextmenu">
+	
+	</div>
     
 	<script type="text/javascript">
 	
-	//create a global pallete for the entire application
+	//pallete
 	var pallete = new OntoUMLPallete();	
-	pallete.installOn("pallete");
+	pallete.setup("pallete");
 	
-	//create a diagram at the 'canvas' html element
-	var canvas1 = new OntoUMLCanvas();
-	canvas1.installOn("canvas");
-	canvas1.forbidDroppingLinksOnEmptySpace();
-	runningExample(canvas1); //draw a running example on it
-	
-	//config canvas...
-	//==============================
-	//attach the pallete to that diagram	
-	pallete.enableDndOn(canvas1);		
-	//install edition/selection on that diagram
-	var edition = new OntoUMLEdition();
-	edition.installOn(canvas1);
-	//install connections suggestions on that diagram
-	var sugg = new OntoUMLConnect();
-	sugg.installOn("connect","contextmenu");
-	sugg.setCanvas(canvas1);
-	
-	//===============================
+	//canvas
+	var canvas = new OntoUMLCanvas();
+	canvas.setup("canvas");	
+	pallete.enableDnd(canvas);		
+		
 	var rightClickMenu = new OntoUMLRightClickContextMenu();
-	rightClickMenu.installOn("contextmenu", canvas1);
-  
+	rightClickMenu.installOn("contextmenu", canvas);
+
+	runningExample(canvas); //draw a running example on it
+	
 	</script>
 </body>
 </html>
