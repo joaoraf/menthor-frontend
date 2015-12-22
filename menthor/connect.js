@@ -1,6 +1,9 @@
 
 function ConnectContextMenu(){
-		
+	
+	/** language used on this pallete by default */
+	this.language = "MCore"
+	
 	/** map containing the connection name and type */
 	this.map = { 
 		'Generalization': 'joint.shapes.mcore.MGeneralization', 
@@ -17,7 +20,7 @@ function ConnectContextMenu(){
 		return menuItems;
 	};
 	
-	/** axiliary method to create N connections for a given item on the context menu */
+	/** axiliary method to create N connections for a given click on the context menu */
 	this.createConnections = function (menukey, numberOfConnections) {
 		var conns = []
 		var connClass = eval(this.map[this.items()[menukey].name]);

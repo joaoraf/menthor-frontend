@@ -13,11 +13,35 @@ function Editor(){
 	/** connection context menu */
 	this.connectMenu = new ConnectContextMenu();
 	
+	/** right click context menu */
+	this.rightClickMenu = new RightClickContextMenu();
+	
 	/** install editing and selection capabilities to a canvas */
 	this.install = function (canvas){
 		this.canvas = canvas;			
 		this.installEditingFeatures();
 		this.installSelectionFeatures();
+		this.installRightClickMenu();
+	};
+	
+	/** install right click context menu */
+	this.installRightClickMenu = function(){
+		this.canvas.getPaper().$el.on('contextmenu', (function(evt) { 
+			evt.stopPropagation(); 
+			evt.preventDefault();  
+			var cellView = this.canvas.getPaper().findView(evt.target);
+			if (cellView){
+				var map = this.rightClickMenu.items(cellView);
+				if(_.isEmpty(map)) { return; }
+				$.contextMenu({
+					selector: '.contextmenu', 
+					events: { hide:function(){ $.contextMenu( 'destroy' ); } },
+					callback: $.proxy((function(key, options) { this.rightClickMenu.action(evt, key, cellView); }).bind(this)),
+					items: map,
+				});	
+				$('.contextmenu').contextMenu({x: evt.clientX, y: evt.clientY});
+			}
+		}).bind(this));
 	};
 	
 	/** install editing features */

@@ -31,18 +31,19 @@
 
 <body>
 	
+	<!-- Pallete Pane -->	
 	<div id="tools">
 		<div id="logo"></div>	
 		<div id="pallete"></div>			
 	</div>
 	
+	<!-- Diagram Pane -->	
 	<div id="diagram">						
 		<div id="canvas"></div>
 	</div>
 
-	<div class="contextmenu">
-	
-	</div>
+	<!-- Context Menu -->	
+	<div class="contextmenu"> </div>
     
 	<script type="text/javascript">
 	
@@ -55,10 +56,8 @@
 	canvas.setup("canvas");	
 	pallete.enableDnd(canvas);		
 		
-	var rightClickMenu = new OntoUMLRightClickContextMenu();
-	rightClickMenu.installOn("contextmenu", canvas);
-
-	runningExample(canvas); //draw a running example on it
+	//running example
+	runningExample(canvas); 
 	
 	</script>
 </body>

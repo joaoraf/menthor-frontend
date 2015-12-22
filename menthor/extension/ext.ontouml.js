@@ -6,7 +6,7 @@ function OntoUMLPallete(){
 	
 	this.elements = function(){
 		var kind = this.createElement(joint.shapes.ontouml.Class,'Kind',10,10,'kind');	
-		var collective = this.createElement(joint.shapes.ontouml.Class,'Collective',110, 10, 'collective');		
+		var collective = this.createElement(joint.shapes.ontouml.Class,'Collective',110, 10, 'collective');	
 		var quantity = this.createElement(joint.shapes.ontouml.Class,'Quantity', 10, 60,'quantity');					
 		var relator = this.createElement(joint.shapes.ontouml.Class,'Relator', 110, 60,'relator');	
 		var mode = this.createElement(joint.shapes.ontouml.Class,'Mode',10, 110,'mode');		
@@ -30,9 +30,11 @@ function OntoUMLPallete(){
 	}		
 }
 	
-extend(OntoUMLConnect,ConnectContextMenu);
-function OntoUMLConnect(){
-
+extend(OntoUMLConnectContextMenu,ConnectContextMenu);
+function OntoUMLConnectContextMenu(){
+	
+	this.language = "OntoUML"
+	
 	this.map = { 
 		'Generalization': 'joint.shapes.ontouml.Generalization', 
 		'Mediation': 'joint.shapes.ontouml.Relationship', 
@@ -55,10 +57,40 @@ function OntoUMLConnect(){
 		
 }
 
+
+extend(OntoUMLRightClickContextMenu, RightClickContextMenu);
+function OntoUMLRightClickContextMenu(){
+		
+	this.language = "OntoUML"
+	
+	this.action = function(evt, key, cellView){
+		this.$super.action.call(this, evt, key, cellView)
+		if(key=="derivedfrom") this.derivedFrom(evt, cellView);
+	};
+	
+	this.items = function(cellView){
+		var map = this.$super.items.call(this,cellView);
+		if(cellView.model instanceof joint.shapes.ontouml.Relationship){
+			if(cellView.model.getStereotypeName()=="material") map["derivedfrom"] = { name: "Derived From"};
+		}
+		return map;
+	};	
+	
+	this.derivedFrom = function(evt, cellView){
+		if(cellView.model instanceof joint.shapes.ontouml.Relationship){
+			if(cellView.model.getStereotypeName()=="material"){					
+				this.canvas.dragDerivation(cellView, evt);
+			}
+		}
+	};	
+}
+
 extend(OntoUMLEditor, Editor);
 function OntoUMLEditor(){	
 
-	this.connectMenu = new OntoUMLConnect();
+	this.connectMenu = new OntoUMLConnectContextMenu();
+	
+	this.rightClickMenu = new OntoUMLRightClickContextMenu();
 	
 	this.deleteCell = function(cellView){	
 		/** delete the derivation if the material is deleted */
@@ -138,33 +170,6 @@ function OntoUMLCanvas(){
 	};
 }
 
-extend(OntoUMLRightClickContextMenu, RightClickContextMenu);
-function OntoUMLRightClickContextMenu(){
-	
-	//@Override
-	this.action = function(evt, key, cellView){
-		this.$super.action.call(this, evt, key, cellView)
-		if(key=="derivedfrom") this.derivedFrom(evt, cellView);
-	}
-	
-	this.derivedFrom = function(evt, cellView){
-		if(cellView.model instanceof joint.shapes.ontouml.Relationship){
-			if(cellView.model.getStereotypeName()=="material"){					
-				this.canvas.dragDerivation(cellView, evt);
-			}
-		}
-	}
-	
-	//@Override	
-	this.getItems = function(cellView){
-		var items = this.$super.getItems.call(this,cellView);
-		if(cellView.model instanceof joint.shapes.ontouml.Relationship){
-			if(cellView.model.getStereotypeName()=="material") items["derivedfrom"] = { name: "Derived From"};
-		}
-		return items;
-	}	
-}
-
 //=====================================================
 //Runnin example
 //=====================================================
@@ -213,7 +218,4 @@ function runningExample(canvas){
 	});	
 	
 	canvas.getGraph().addCells([forest, tree, entity, color, link, link2, material, genSet]);
-	
-	//workaraound to link genSets to its generalizations
-	//genSet.setGeneralizations(canvas, [link2]);			
 }
