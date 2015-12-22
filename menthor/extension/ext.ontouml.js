@@ -63,9 +63,9 @@ function OntoUMLRightClickContextMenu(){
 		
 	this.language = "OntoUML"
 	
-	this.action = function(evt, key, cellView){
-		this.$super.action.call(this, evt, key, cellView)
-		if(key=="derivedfrom") this.derivedFrom(evt, cellView);
+	this.action = function(evt, key, cellView, canvas){
+		this.$super.action.call(this, evt, key, cellView, canvas)
+		if(key=="derivedfrom") this.derivedFrom(evt, cellView, canvas);
 	};
 	
 	this.items = function(cellView){
@@ -76,10 +76,10 @@ function OntoUMLRightClickContextMenu(){
 		return map;
 	};	
 	
-	this.derivedFrom = function(evt, cellView){
+	this.derivedFrom = function(evt, cellView, canvas){
 		if(cellView.model instanceof joint.shapes.ontouml.Relationship){
 			if(cellView.model.getStereotypeName()=="material"){					
-				this.canvas.dragDerivation(cellView, evt);
+				canvas.dragDerivation(cellView, evt);
 			}
 		}
 	};	

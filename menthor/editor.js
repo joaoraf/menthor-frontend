@@ -36,7 +36,7 @@ function Editor(){
 				$.contextMenu({
 					selector: '.contextmenu', 
 					events: { hide:function(){ $.contextMenu( 'destroy' ); } },
-					callback: $.proxy((function(key, options) { this.rightClickMenu.action(evt, key, cellView); }).bind(this)),
+					callback: $.proxy((function(key, options) { this.rightClickMenu.action(evt, key, cellView, this.canvas); }).bind(this)),
 					items: map,
 				});	
 				$('.contextmenu').contextMenu({x: evt.clientX, y: evt.clientY});
