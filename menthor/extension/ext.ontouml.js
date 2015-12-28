@@ -4,30 +4,38 @@ function OntoUMLPallete(){
 	
 	this.language = "OntoUML"
 	
-	this.elements = function(){
-		var kind = this.createElement(joint.shapes.ontouml.Class,'Kind',10,10,'kind');	
-		var collective = this.createElement(joint.shapes.ontouml.Class,'Collective',110, 10, 'collective');	
-		var quantity = this.createElement(joint.shapes.ontouml.Class,'Quantity', 10, 60,'quantity');					
-		var relator = this.createElement(joint.shapes.ontouml.Class,'Relator', 110, 60,'relator');	
-		var mode = this.createElement(joint.shapes.ontouml.Class,'Mode',10, 110,'mode');		
-		var quality = this.createElement(joint.shapes.ontouml.Class,'Quality', 110, 110,'quality');			
-		var subkind = this.createElement(joint.shapes.ontouml.Class,'SubKind',10, 160,'subkind');	
-		var role = this.createElement(joint.shapes.ontouml.Class,'Role',110, 160,'role');		
-		var phase = this.createElement(joint.shapes.ontouml.Class,'Phase',10, 210,'phase');		
-		var category = this.createElement(joint.shapes.ontouml.Class,'Category', 110, 210,'category');	
-		var roleMixin = this.createElement(joint.shapes.ontouml.Class,'RoleMixin',10, 260,'roleMixin');		
-		var phaseMixin = this.createElement(joint.shapes.ontouml.Class,'PhaseMixin',110, 260,'phaseMixin');	
-		var mixin = this.createElement(joint.shapes.ontouml.Class,'Mixin',10, 310,'mixin');	
-		var event = this.createElement(joint.shapes.ontouml.Class,'Event',110, 310,'event');	
-		var highorder = this.createElement(joint.shapes.ontouml.Class,'HighOrder',10, 360,'highorder');	
-		var domain = this.createElement(joint.shapes.ontouml.DataType,'Domain',110, 360,'domain');
-		var dimension = this.createElement(joint.shapes.ontouml.DataType,'Dimension',10, 410,'dimension');	
-		var enumeration = this.createElement(joint.shapes.ontouml.DataType,'Enumeration',110, 410,'enumeration');	
-		var genset = this.createElement(joint.shapes.ontouml.GeneralizationSet,'',10, 460, null);
+	/** override shapes */
+	this.shapes = function(){		
+		var kind = this.createShape(joint.shapes.ontouml.Class,10,10, OntoUMLClass, 'kind', 'Kind');
+		var collective = this.createShape(joint.shapes.ontouml.Class,110, 10, OntoUMLClass,'collective','Collective');	
+		var quantity = this.createShape(joint.shapes.ontouml.Class,10, 60,OntoUMLClass, 'quantity', 'Quantity');					
+		var relator = this.createShape(joint.shapes.ontouml.Class, 110, 60,OntoUMLClass, 'relator', 'Relator');	
+		var mode = this.createShape(joint.shapes.ontouml.Class,10, 110,OntoUMLClass, 'mode','Mode');		
+		var quality = this.createShape(joint.shapes.ontouml.Class,110, 110,OntoUMLClass, 'quality', 'Quality');			
+		var subkind = this.createShape(joint.shapes.ontouml.Class,10, 160,OntoUMLClass,'subkind', 'SubKind');	
+		var role = this.createShape(joint.shapes.ontouml.Class,110, 160,OntoUMLClass,'role', 'Role');		
+		var phase = this.createShape(joint.shapes.ontouml.Class,10, 210,OntoUMLClass,'phase','Phase');		
+		var category = this.createShape(joint.shapes.ontouml.Class, 110, 210,OntoUMLClass,'category','Category');	
+		var roleMixin = this.createShape(joint.shapes.ontouml.Class,10, 260,OntoUMLClass,'roleMixin','RoleMixin');		
+		var phaseMixin = this.createShape(joint.shapes.ontouml.Class,110, 260,OntoUMLClass,'phaseMixin','PhaseMixin');	
+		var mixin = this.createShape(joint.shapes.ontouml.Class,10, 310,OntoUMLClass,'mixin','Mixin');	
+		var event = this.createShape(joint.shapes.ontouml.Class,110, 310,OntoUMLClass,'event','Event');	
+		var highorder = this.createShape(joint.shapes.ontouml.Class,10, 360,OntoUMLClass,'highorder','HighOrder');	
+		var domain = this.createShape(joint.shapes.ontouml.DataType,110, 360,OntoUMLDataType, 'domain','Domain');
+		var dimension = this.createShape(joint.shapes.ontouml.DataType,10, 410,OntoUMLDataType,'dimension','Dimension');	
+		var enumeration = this.createShape(joint.shapes.ontouml.DataType,110, 410,OntoUMLDataType, 'enumeration', 'Enumeration');	
+		var genset = this.createShape(joint.shapes.ontouml.GeneralizationSet,10, 460, OntoUMLGeneralizationSet, null, '');
 		genset.set('size',{width: 195, height: 20});
 		return [kind, collective, quantity, relator, mode, quality, subkind, role, phase,
 		category, roleMixin, phaseMixin, mixin, event, highorder, domain, dimension, enumeration, genset];
-	}		
+	}
+	
+	/** create both shape and content of a pallete element */
+	this.createShape = function(shape_type, x, y, lang_type, stereotype, name){
+		var elemContent = new lang_type(); elemContent.name = name; elemContent.stereotype = stereotype;
+		var elemShape = new shape_type({ position: {x: x,y: y}, content: elemContent	});
+		return elemShape;
+	}	
 }
 	
 extend(OntoUMLConnectContextMenu,ConnectContextMenu);
@@ -35,6 +43,7 @@ function OntoUMLConnectContextMenu(){
 	
 	this.language = "OntoUML"
 	
+	/** override connections in the context menu */
 	this.map = { 
 		'Generalization': 'joint.shapes.ontouml.Generalization', 
 		'Mediation': 'joint.shapes.ontouml.Relationship', 
@@ -54,13 +63,26 @@ function OntoUMLConnectContextMenu(){
 		'Temporal': 'joint.shapes.ontouml.Relationship', 
 		'InstanceOf': 'joint.shapes.ontouml.Relationship'	
 	}	
-		
+	
+	/** create N connection shapes with their content */
+	this.createConnections = function (menukey, numberOfConnections) {
+		var conns = [];
+		var shape_type = eval(this.map[this.items()[menukey].name]);
+		var stereotype = (String(menukey)).toLowerCase();
+		for(var i=0; i<numberOfConnections; i++){
+			var elemContent = new OntoUMLRelationship();
+			if(stereotype==="generalization") elemContent = new OntoUMLGeneralization();			
+			else elemContent.stereotype = stereotype;
+			var elemShape = new shape_type({content: elemContent});
+			conns.push(elemShape);
+		};
+		return conns
+	};	
 }
-
 
 extend(OntoUMLRightClickContextMenu, RightClickContextMenu);
 function OntoUMLRightClickContextMenu(){
-		
+	
 	this.language = "OntoUML"
 	
 	this.action = function(evt, key, cellView, canvas){
@@ -88,32 +110,35 @@ function OntoUMLRightClickContextMenu(){
 extend(OntoUMLEditor, Editor);
 function OntoUMLEditor(){	
 
-	this.connectMenu = new OntoUMLConnectContextMenu();
-	
+	/** override context menus */
+	this.connectMenu = new OntoUMLConnectContextMenu();	
 	this.rightClickMenu = new OntoUMLRightClickContextMenu();
 	
-	this.deleteCell = function(cellView){	
+	this.deleteShape = function(shape){	
 		/** delete the derivation if the material is deleted */
-		var links = this.canvas.getGraph().getConnectedLinks(cellView.model);	
-		if(cellView.model instanceof joint.dia.Link) links.push(cellView.model);		
+		var links = this.canvas.getGraph().getConnectedLinks(shape);	
+		if(shape instanceof joint.dia.Link) links.push(shape);		
 		_.each(links, (function(link){			
 			if(link instanceof joint.shapes.ontouml.Relationship){
 				if(link.getStereotypeName()=="material"){					
 					if(!_.isEmpty(link.get('derivation'))){
 						var derivationView = this.canvas.getPaper().findViewByModel(link.get('derivation'));
-						this.$super.deleteCell.call(this,derivationView);						
+						this.$super.deleteShape.call(this,derivationView.model);						
 					}
 				}
 			}
 		}).bind(this));
-		/** delete cell */
-		this.$super.deleteCell.call(this,cellView);
+		/** delete shape */
+		this.$super.deleteShape.call(this,shape);
 	};
 }
 
 extend(OntoUMLCanvas, Canvas);
 function OntoUMLCanvas(){
 	
+	this.language = "OntoUML";
+	
+	/** override the editor */
 	this.editor = new OntoUMLEditor();
 	
 	this.setDerivation = function(materialView, truthMakerId){		
@@ -175,13 +200,30 @@ function OntoUMLCanvas(){
 //=====================================================
 
 function runningExample(canvas){
-	var forest = new joint.shapes.ontouml.Class({	
-        name: 'Forest',
-		stereotype:'collective',
-        attributes: ['name: String'],
+	
+	/** abstract syntax */
+	var forest = new OntoUMLClass();
+	forest.name = 'Forest';	
+	forest.stereotype = 'collective';
+	var attribute = new MAttribute();
+	attribute.name = 'name';
+	attribute.stereotype = 'String';
+	attribute.multiplicity = '1';
+	forest.attributes.push(attribute);
+	attribute.owner = forest;
+		
+	/**concrete syntax for the forest */
+	var forestShape = new joint.shapes.ontouml.Class({	
+        content: forest,       
         position: { x: 100, y: 130 }
-    });
-	var tree = new joint.shapes.ontouml.Class({	
+    });	
+	var forestShape2 = new joint.shapes.ontouml.Class({	
+        position: { x: 150, y: 130 }
+    });	
+	
+	canvas.getGraph().addCells([forestShape, forestShape2]);
+	
+	/*var tree = new joint.shapes.ontouml.Class({	
         name: 'Tree',
 		stereotype:'kind',
         position: { x: 400, y: 140 }
@@ -217,5 +259,5 @@ function runningExample(canvas){
 		isCovering: true,
 	});	
 	
-	canvas.getGraph().addCells([forest, tree, entity, color, link, link2, material, genSet]);
+	canvas.getGraph().addCells([forest, tree, entity, color, link, link2, material, genSet]);*/
 }

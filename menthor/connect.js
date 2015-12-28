@@ -4,11 +4,20 @@ function ConnectContextMenu(){
 	/** language used on this pallete by default */
 	this.language = "MCore"
 	
-	/** map containing the connection name and type */
+	/** map containing the connection shape name and type */
 	this.map = { 
 		'Generalization': 'joint.shapes.mcore.MGeneralization', 
 		'Relationship': 'joint.shapes.mcore.MRelationship'
 	}
+	
+	this.action = function(evt, menukey, canvas){
+		var links = this.createConnections(menukey, canvas.getEditor().selected().length);
+		var idx = 0;
+		_.each(links, function(link){
+			canvas.dragLinkFrom(evt, link, canvas.getEditor().selected()[idx]);
+			idx++;
+		});
+	};
 	
 	/** context menu items based on the connections map */
 	this.items = function(){
@@ -20,13 +29,13 @@ function ConnectContextMenu(){
 		return menuItems;
 	};
 	
-	/** axiliary method to create N connections for a given click on the context menu */
+	/** axiliary method to create N connection shapes for a given click on the context menu */
 	this.createConnections = function (menukey, numberOfConnections) {
 		var conns = []
 		var connClass = eval(this.map[this.items()[menukey].name]);
 		var stereotype = (String(menukey)).toLowerCase();
 		for(var i=0; i<numberOfConnections; i++){
-			conns.push(new connClass({stereotype:stereotype}));
+			conns.push(new connClass());
 		};
 		return conns
 	};	

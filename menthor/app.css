@@ -79,14 +79,6 @@ select{
 	background: #242424;
 	color: white;
 }
-.collapse{
-	text-align: center;
-	position: absolute;
-	top: 4px;
-	left: 10px;
-	width: 15px;
-	cursor: pointer;
-}
 .mask{
 	display: none;
 	position: fixed;
@@ -105,6 +97,7 @@ select{
 #tools{
 	width: 250px;
 	height: 100%;
+	background: #262D36;
 	overflow-y: auto;
 	overflow-x: hidden;
 	text-align: center;

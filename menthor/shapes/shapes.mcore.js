@@ -1,46 +1,73 @@
-joint.shapes.mcore = {};
 
 /** ===========================
-  * MType
+  * MCore - Concrete Syntax
+  *
+  * A shape makes reference to an instance of an element in the language's abstract syntax.
+  * The shape's attribute called 'content' is used to store that instance.
   * =========================== */
 
-joint.shapes.mcore.MType = joint.shapes.uml.Class.extend({
+joint.shapes.mcore = {};
 
+joint.shapes.mcore.MType = joint.shapes.basic.Generic.extend({
+
+	markup: [
+        '<g class="rotatable">',
+          '<g class="scalable">',
+            '<rect class="uml-class-name-rect"/><rect class="uml-class-attrs-rect"/>',
+          '</g>',
+          '<text class="uml-class-name-text"/><text class="uml-class-attrs-text"/>',
+        '</g>'
+    ].join(''),
+		           	
     defaults: joint.util.deepSupplement({
         type: 'joint.shapes.mcore.MType',			
         size: { width: 95, height: 40 },
         attrs: {
-			magnet: true,
-            '.uml-class-name-rect': { 'stroke-width': 2, 'fill': '#FFFFFF' },
-			'.uml-class-attrs-rect': { 'stroke-width': 2, 'fill': '#FFFFFF' }, 		
-			'.uml-class-methods-rect': { 'stroke-width': 2, 'fill': '#FFFFFF' },			
-			'.uml-class-name-text': { 'font-size': 13, 'font-family': 'Arial', 'font-weight': 'plain' },
-            '.uml-class-attrs-text': {'font-size': 13, 'font-family': 'Arial' },
-            '.uml-class-methods-text': { 'font-size': 13, 'font-family': 'Arial' }
-		},		
-		name: [],
-		attributes: [],
-		uniqueName: [],
-		definitions: [],
-		synonyms: [],
-		text: [],
-		isAbstract: true,	
-    }, joint.shapes.uml.Class.prototype.defaults),		
+            '.uml-class-name-rect': { 'stroke': 'black', 'stroke-width': 2, 'fill': '#FFFFFF' },
+			'.uml-class-attrs-rect': { 'stroke': 'black', 'stroke-width': 2, 'fill': '#FFFFFF' },
+			'.uml-class-name-text': { 'ref': '.uml-class-name-rect', 'ref-y': .5, 'ref-x': .5, 'text-anchor': 'middle', 'y-alignment': 'middle', 'font-weight': 'plain',  'fill': 'black', 'font-size': 13, 'font-family': 'Arial' },			
+            '.uml-class-attrs-text': { 'ref': '.uml-class-attrs-rect', 'ref-y': 5, 'ref-x': 5, 'fill': 'black', 'font-size': 13, 'font-family': 'Arial' },			            
+		},						
+		content: new MType(), //reference to the abstract syntax
+    }, joint.shapes.basic.Generic.prototype.defaults),		
 	
-	initialize: function() {
-        joint.shapes.uml.Class.prototype.initialize.apply(this, arguments);	
+	//getters to the abstract syntax values
+	getName: function(){ return this.get('content').name; },	
+	getAttributes: function(){ return this.get('content').attributes; },
+	getUniqueName: function(){ return this.get('content').uniqueName; },
+	getDefinitions: function(){ return this.get('content').definitions; },
+	getSynonyms: function(){ return this.get('content').synonyms; },
+	getText: function(){ return this.get('content').text; },
+	isAbstract: function(){ return this.get('content').isAbstract; },
+	
+	displayName: function(){ return this.get('content').name; },
+	addAttribute: function(attr) { this.get('content').attributes.push(attr); },
+	attributeText: function(attr) {
+		return attr.name + ": "+attr.stereotype+" ["+attr.multiplicity+"]" 
+	},
+	attributesText: function() {
+		var result = []
+		_.each(this.getAttributes(), (function(attr){ result.push(this.attributeText(attr)); }).bind(this));
+		return result;
+	},
+			
+	initialize: function(){		
+		joint.shapes.basic.Generic.prototype.initialize.apply(this, arguments);		
+		this.on('change:content.name change:content.attributes', function() { this.updateRectangles(); this.trigger('mtype-update'); }, this);		
+        this.updateRectangles();		        
     },
 	
-	getName: function(){ return this.get('name'); },
-	getFullName: function(){ return this.getClassName(); },	
-	getAttributes: function(){ return this.get('attributes'); },
 	getWidth: function(){ return this.get('size').width; },	
 	getHeight: function(){ return this.get('size').height; },	
-	getUniqueName: function(){ return this.get('uniqueName'); },
-	getDefinitions: function(){ return this.get('definitions'); },
-	getSynonyms: function(){ return this.get('synonyms'); },
-	getText: function(){ return this.get('text'); },
-	isAbstract: function(){ return this.get('isAbstract'); },
+	
+	updateRectangles: function() {        
+        var rects = [
+            { type: 'name', text: this.displayName() },
+            { type: 'attrs', text: this.attributesText() },            
+        ];	
+		this.updateRectanglesWidth(rects);
+		this.updateRectanglesHeight(rects);			
+    },
 	
 	/** Max width of the texts inside the rectangles 
 	  * i.e. max width between the name, stereotype, attributes and methods */
@@ -82,38 +109,45 @@ joint.shapes.mcore.MType = joint.shapes.uml.Class.extend({
 			}
         });
 		if(this.get('size').height < offsetY) this.get('size').height = offsetY;
+	},	
+});
+
+//need this inheritance to resize he element properly 
+joint.shapes.mcore.MTypeView = joint.dia.ElementView.extend({
+	
+    initialize: function() {		
+        joint.dia.ElementView.prototype.initialize.apply(this, arguments);
+        this.listenTo(this.model, 'mtype-update', function() { this.update(); this.resize(); });
+    }
+});
+
+joint.shapes.mcore.MClass = joint.shapes.mcore.MType.extend({
+	
+	defaults: joint.util.deepSupplement({
+        type: 'joint.shapes.mcore.MClass',
+		content: new MClass(), //reference to the abstract syntax
+    }, joint.shapes.mcore.MType.prototype.defaults),		
+	
+	initialize: function(){        
+        joint.shapes.mcore.MType.prototype.initialize.apply(this, arguments);		
+    },	
+});
+
+joint.shapes.mcore.MDataType = joint.shapes.mcore.MType.extend({
+	
+	defaults: joint.util.deepSupplement({
+        type: 'joint.shapes.mcore.MDataType',
+		content: new MDataType(), //reference to the abstract syntax
+    }, joint.shapes.mcore.MType.prototype.defaults),
+	
+	displayName: function(){
+		return ["\u00AB"+"dataType"+"\u00BB",this.getName()];
 	},
 	
-	updateRectangles: function() {        
-        var rects = [
-            { type: 'name', text: this.getFullName() },
-            { type: 'attrs', text: this.get('attributes') },
-            { type: 'methods', text: this.get('methods') }
-        ];	
-		this.updateRectanglesWidth(rects);
-		this.updateRectanglesHeight(rects);			
-    }	
+	initialize: function(){        
+        joint.shapes.mcore.MType.prototype.initialize.apply(this, arguments);	
+    },
 });
-
-/** ===========================
-  * MClass 
-  * =========================== */
-  
-joint.shapes.mcore.MClass = joint.shapes.mcore.MType.extend({
-	type: 'joint.shapes.mcore.MClass',
-});
-
-/** ===========================
-  * MDataType 
-  * =========================== */
-  
-joint.shapes.mcore.MDataType = joint.shapes.mcore.MType.extend({
-	type: 'joint.shapes.mcore.MDataType',
-});
-
-/** ===========================
-  * MGeneralizationSet 
-  * =========================== */
 
 joint.shapes.mcore.MGeneralizationSet = joint.shapes.basic.Rect.extend({
 	
@@ -124,125 +158,94 @@ joint.shapes.mcore.MGeneralizationSet = joint.shapes.basic.Rect.extend({
         attrs: { 						
 			rect: { fill: 'white', 'stroke-width': 0}, text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, text: '' }
 		},
-		name: 'gs',
-		isDisjoint: true,
-		isCovering: true,
-		generalizations: [],
+		content: new MGeneralizationSet(), //reference to the abstract syntax
     }, joint.shapes.basic.Rect.prototype.defaults),
 	
-	setIsDisjoint: function(value){ this.set('isDisjoint',value) },	
-	setIsCovering: function(value){ this.set('isCovering',value) },	
-	isDisjoint: function(){ return this.get('isDisjoint'); },	
-	isCovering: function(){ return this.get('isCovering'); },		
-	setName: function(value) { this.set('name',value); },
-	getName: function() { return this.get('name'); },
+	//getters to the abstract syntax values
+	isDisjoint: function(){ return this.get('content').disjoint; },			
+	isComplete: function(){ return this.get('content').complete; },			
+	getName: function() { return this.get('content').name; },
 	
-	getAttributesText: function(){
+	metaAttributesText: function(){
 		var text = "";
-		if(this.isDisjoint() && !this.isCovering()) text = "{disjoint}";
-		if(!this.isDisjoint() && this.isCovering()) text = "{covering}";
-		if(this.isDisjoint() && this.isCovering()) text = "{disjoint, covering}";
-		if(!this.isDisjoint() && !this.isCovering()) text = "{}";
+		if(this.isDisjoint() && !this.isComplete()) text = "{disjoint}";
+		if(!this.isDisjoint() && this.isComplete()) text = "{complete'}";
+		if(this.isDisjoint() && this.isComplete()) text = "{disjoint, complete}";
+		if(!this.isDisjoint() && !this.isComplete()) text = "{}";
 		return text;		
 	},
 	
-	toString: function(){
-		return this.getName()+" "+this.getAttributesText();
+	updateText: function(){ this.get('attrs').text.text = this.metaAttributesText(); },
+	
+	setDefaultSize: function(){
+		this.set('size', { width: 125, height: 20 });
 	},
-		
+	
 	initialize: function() {
         joint.shapes.basic.Rect.prototype.initialize.apply(this, arguments);
-		this.on('add change:isCovering change:isDisjoint',function() { this.updateText(); }, this);	
+		this.on('add change:content.complete change:content.disjoint',function() { this.updateText(); }, this);
+		this.setDefaultSize();
 	},
-		
-	getMiddleGeneralization: function(){
-		if(this.get('generalizations')==null) return;
-		var mid = Math.floor(this.get('generalizations').length/2);
-		if(mid<0) mid=0;
-		return this.get('generalizations')[mid];		
-	},
-	
-	updateText: function(){
-		this.get('attrs').text.text = this.getAttributesText();		
-	},
-	
-	addGeneralizations: function(canvas, gens){		
-		_.each(gens, (function(g){
-			if(!inArray(this.get('generalizations'), g)) this.get('generalizations').push(g);	
-		}).bind(this));	
-		this.updatePosition(canvas.getGraph());
-	},
-	
-	updatePosition: function(graph){
-		this.toBack();
-		var pointAnchor = midPoint(graph,this.getMiddleGeneralization());
-		this.set('position', {x: pointAnchor.x, y: pointAnchor.y });				
-	},	
 });
-
-/** ===========================
-  * MGeneralization 
-  * =========================== */
   
 joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
+	
 	defaults: joint.util.deepSupplement({  
 		type: 'joint.shapes.mcore.MGeneralization',
 		attrs: { '.marker-target': { d: 'M 18 0 L 0 10 L 18 18 z', fill: 'white' }},
-		link: [], //to genset
+		content: new MGeneralization(), //reference to the abstract syntax
+		gslink: [], 	
 	}, joint.shapes.uml.Generalization.prototype.defaults),
 	
 	initialize: function() {
         joint.shapes.uml.Generalization.prototype.initialize.apply(this, arguments);
     },
 	
-	getGeneralizationSet: function(){
-		return this.get('link').get('target')
-	},
+	//getters to the abstract syntax values
+	getGeneral: function(){ return this.get('content').general },
+	getSpecific: function(){ return this.get('content').specific },
+	getGeneralizationSet: function() { return this.get('content').generalzationSet },
 	
-	getGeneral: function(){ return this.get('target') },
-	getSpecific: function(){ return this.get('source') },
+	getGeneralizationSetShape: function(){ return this.get('gslink').get('target') },	
+	getGeneralShape: function(){ return this.get('target') },
+	getSpecificShape: function(){ return this.get('source') },	
 });
-
-/** ===========================
-  * MRelationship 
-  * =========================== */
   
 joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
+	
     defaults: joint.util.deepSupplement({ 		
 		type: 'joint.shapes.mcore.MRelationship',
 		labels: [],
-		name: [],
-		
-		sourceMultiplicity: "1",			
-		sourceDependent:false,
-		sourceOrdered:false,
-		sourceEndName: [],
-		sourceDerived: false,
-		
-		targetMultiplicity: "1..*",
-		targetDependent:false,		
-		targetOrdered:false,		
-		targetEndName: [],
-		targetDerived: false,
-		
+		content: new MRelationship(), //reference to the abstract syntax
 	}, joint.shapes.uml.Association.prototype.defaults),
-
-	setName: function(name){ this.set('name',name) }, 	
-	getName: function(){ return this.get('name') }, 	
-	getSourceMultiplicity: function(){ return this.get('sourceMultiplicity') },	
-	getTargetMultiplicity: function(){ return this.get('targetMultiplicity') },	
-	isSourceDependent: function(){ return this.get('sourceDependent') }, 	
-	getSourceDependentLabelName: function(){ return "dependent" },	
-	isTargetDependent: function(){ return this.get('targetDependent') }, 	
-	getTargetDependentLabelName: function(){ return "dependent" },		
-	isSourceOrdered: function(){ return this.get('sourceOrdered') }, 	
-	getSourceOrderedLabelName: function(){ return "ordered" },	
-	isTargetOrdered: function(){ return this.get('targetOrdered') }, 	
-	getTargetOrderedLabelName: function(){ return "ordered" },	
+	
+	initialize: function() {				
+		joint.shapes.uml.Association.prototype.initialize.apply(this, arguments);	
+		this.on('add change:content.endPoints[0].multiplicity change:content.endPoints[0].dependency change:content.endPoints[0].ordered', function() { this.updateCornerLabels(); }, this);
+		this.on('add change:content.endPoints[1].multiplicity change:content.endPoints[1].dependency change:content.endPoints[1].ordered', function() { this.updateCornerLabels(); }, this);		
+		this.on('add change:content.name',function() { this.updateNameLabel(); }, this);
+    },
+	
+	//getters to the abstract syntax values
+	getName: function(){ return this.get('content').name }, 	
+	getSourceMultiplicity: function(){ return this.get('content').endPoints[0].multiplicity },	
+	getTargetMultiplicity: function(){ return this.get('content').endPoints[1].multiplicity },	
+	isSourceDependent: function(){ return this.get('content').endPoints[0].dependency }, 		
+	isTargetDependent: function(){ return this.get('content').endPoints[1].dependency }, 		
+	isSourceOrdered: function(){ return this.get('content').endPoints[0].ordered }, 		
+	isTargetOrdered: function(){ return this.get('content').endPoints[1].ordered }, 	
+		
+	getSourceShape: function() { return this.get('source'); },
+	getTargetShape: function() { return this.get('target'); },
 	toOrthogonal: function(){ this.set('router', { name: 'orthogonal' }); },		
 	toManhatan: function(){ this.set('router', { name: 'manhattan' }); },	
 	toMetro: function(){ this.set('router', { name: 'metro' }); },
-	
+		
+	getSourceDependentLabelName: function(){ return "dependent" },	
+	getTargetDependentLabelName: function(){ return "dependent" },		
+	getSourceOrderedLabelName: function(){ return "ordered" },	
+	getTargetOrderedLabelName: function(){ return "ordered" },	
+		
 	getSourceFullLabelName: function(){
 		if(this.getSourceMultiplicity()!=null){
 			if(this.isSourceOrdered() && this.isSourceDependent()){
@@ -270,13 +273,6 @@ joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
 			}
 		}
 	},
-		
-	initialize: function() {				
-		joint.shapes.uml.Association.prototype.initialize.apply(this, arguments);	
-		this.on('add change:sourceMultiplicity change:targetMultiplicity change:sourceOrdered change:sourceDependent change:targetDependent change:targetOrdered', 
-		function() { this.updateCornerLabels(); }, this);		
-		this.on('add change:name',function() { this.updateNameLabel(); }, this);			
-    },				
 	
 	updateNameLabel: function(){
 		this.label(0, {

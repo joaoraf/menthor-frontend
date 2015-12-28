@@ -2,7 +2,6 @@ function extend(Child, Parent) {
   var parent = new Parent();
   Child.prototype = parent;
   Child.prototype.$super = parent;
-  Child.prototype = new Child(Array.prototype.slice.call(arguments,1));
   Child.prototype.constructor = Child
 }
 

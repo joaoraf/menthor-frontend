@@ -1,45 +1,81 @@
+/** ===========================
+  * OntoUML - Concrete Syntax
+  *
+  * A shape makes reference to an instance of an element in the language's abstract syntax.
+  * The shape's attribute called 'content' is used to store that instance.
+  * =========================== */
+  
 joint.shapes.ontouml = {};
 
-/** Generalization Set */
+joint.shapes.ontouml.DataType = joint.shapes.mcore.MDataType.extend({
+
+    defaults: joint.util.deepSupplement({
+        type: 'joint.shapes.ontouml.DataType',		
+		content: new OntoUMLDataType(),
+    }, joint.shapes.mcore.MDataType.prototype.defaults),
+	
+	stereotypeName: function() { return this.get('content').stereotype; },	
+	displayName: function() {
+		if(this.get('content').stereotype !=null && this.get('content').stereotype.length > 0){
+			return ["\u00AB"+this.get('content').stereotype+"\u00BB",this.get('content').name];
+		}else{
+			return ["\u00AB"+"dataType"+"\u00BB",this.get('content').name]
+		}
+    }
+});
+
+joint.shapes.ontouml.Class = joint.shapes.mcore.MClass.extend({
+
+    defaults: joint.util.deepSupplement({
+        type: 'joint.shapes.ontouml.Class',		
+		content: new OntoUMLClass,
+    }, joint.shapes.mcore.MClass.prototype.defaults),
+		
+	stereotypeName: function() { return this.get('content').stereotype; },	
+	displayName: function() {
+		if(this.get('content').stereotype !=null && this.get('content').stereotype.length > 0){
+			return ["\u00AB"+this.get('content').stereotype+"\u00BB",this.get('content').name];
+		}else{
+			return this.get('content').name;
+		}
+    }	
+});
+
 joint.shapes.ontouml.GeneralizationSet = joint.shapes.mcore.MGeneralizationSet.extend({
 	type: 'joint.shapes.ontouml.GeneralizationSet',	
 });
 
-/** Generalization */
 joint.shapes.ontouml.Generalization = joint.shapes.mcore.MGeneralization.extend({
 	type: 'joint.shapes.ontouml.Generalization',	
 });
 
-/** Relationship */
 joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 	
 	defaults: joint.util.deepSupplement({ 
-		type: 'joint.shapes.ontouml.Relationship',		
-		stereotype: [],
+		type: 'joint.shapes.ontouml.Relationship',				
 		derivation: [],
-		essentialPart: false,
-		immutablePart: false,
-		immutableWhole: false,
-		inseparablePart: false,
-		shareable: false,
+		content: new OntoUMLRelationship(), //reference to the abstract syntax
 	}, joint.shapes.mcore.MRelationship.prototype.defaults),
 		
-	getStereotype: function() {
-		if(this.get('stereotype')!=null && this.get('stereotype')!=""){
-			return "\u00AB"+this.get('stereotype')+"\u00BB";
-		}else{
-			return "";
-		}
-    },
-	
-	setStereotype: function(stereo) { this.set('stereotype', stereo); },	
-	getStereotypeName: function() { return String(this.get('stereotype')); },	
-	isShareable: function() { return this.get('shareable'); },	
-	isPartEssential: function() { return this.get('essentialPart'); },	
-	isWholeImmutable: function() { return this.get('immutableWhole'); },	
-	isPartInseparable: function() { return this.get('inseparablePart'); },
-	isPartImmutable: function() { return this.get('immutablePart'); },	
+	getStereotypeName: function() { return String(this.get('content').stereotype); },	
+	isShareable: function() { return this.get('content').shareable; },	
+	isPartEssential: function() { return this.get('content').essentialPart; },	
+	isWholeImmutable: function() { return this.get('content').immutableWhole; },	
+	isPartInseparable: function() { return this.get('content').inseparablePart; },
+	isPartImmutable: function() { return this.get('content').immutablePart; },	
 	getFullLabelName: function(){ return this.getName()+"\n"+this.getStereotype() },
+	getStereotype: function() {
+		if(this.get('content').stereotype!=null && this.get('content').stereotype!="") return "\u00AB"+this.get('content').stereotype+"\u00BB"; 
+		else return "";
+    },	
+	
+	initialize: function() {		
+		joint.shapes.mcore.MRelationship.prototype.initialize.apply(this, arguments);		
+		this.updateShape();				
+		this.on('add change:content.stereotype',function() { this.updateStereotypeLabel(); this.updateShape(); }, this);		
+		this.on('add change:content.essentialPart change:content.immutablePart change:content.immutableWhole change:content.inseparablePart', 
+		function() { this.updateMetaAttributeLabels(); }, this);
+    },	
 	
 	updateStereotypeLabel: function(){					
 		var txt = this.getStereotype();
@@ -90,50 +126,4 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 			this.toBack();
 		} 	
 	},
-	
-	initialize: function() {		
-		joint.shapes.mcore.MRelationship.prototype.initialize.apply(this, arguments);		
-		this.updateShape();				
-		this.on('add change:stereotype',function() { this.updateStereotypeLabel(); this.updateShape(); }, this);		
-		this.on('add change:essentialPart change:immutablePart change:immutableWhole change:inseparablePart', 
-		function() { this.updateMetaAttributeLabels(); }, this);
-    },	
-});
-
-/** DataType */
-joint.shapes.ontouml.DataType = joint.shapes.mcore.MDataType.extend({
-
-    defaults: joint.util.deepSupplement({
-        type: 'joint.shapes.ontouml.DataType',		
-        stereotype: []
-    }, joint.shapes.mcore.MDataType.prototype.defaults),
-	
-	getStereotypeName: function() { return this.get('stereotype'); },
-	
-	getFullName: function() {
-		if(this.get('stereotype').length > 0){
-			return ["\u00AB"+this.get('stereotype')+"\u00BB",this.get('name')];
-		}else{
-			return this.get('name');
-		}
-    }
-});
-
-/** Class */
-joint.shapes.ontouml.Class = joint.shapes.mcore.MClass.extend({
-
-    defaults: joint.util.deepSupplement({
-        type: 'joint.shapes.ontouml.Class',		
-        stereotype: []
-    }, joint.shapes.mcore.MClass.prototype.defaults),
-	
-	getStereotypeName: function() { return this.get('stereotype'); },
-	
-	getFullName: function() {
-		if(this.get('stereotype').length > 0){
-			return ["\u00AB"+this.get('stereotype')+"\u00BB",this.get('name')];
-		}else{
-			return this.get('name');
-		}
-    }	
 });

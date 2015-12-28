@@ -2,7 +2,7 @@
 /** last event registred */
 Editor.lastEvent = null;
 
-/** selected elements (joint views) */
+/** selected elements (jointjs views) */
 Editor.selection = [];
 
 function Editor(){
@@ -10,10 +10,8 @@ function Editor(){
 	/** the canvas attached to this Editor */
 	this.canvas = null;
 	
-	/** connection context menu */
-	this.connectMenu = new ConnectContextMenu();
-	
-	/** right click context menu */
+	/** context menus */
+	this.connectMenu = new ConnectContextMenu();	
 	this.rightClickMenu = new RightClickContextMenu();
 	
 	/** install editing and selection capabilities to a canvas */
@@ -22,6 +20,100 @@ function Editor(){
 		this.installEditingFeatures();
 		this.installSelectionFeatures();
 		this.installRightClickMenu();
+	};
+	
+	//======================================================================
+	
+	/** check if we can select an element view */
+	this.canSelect = function(cellView){
+		return cellView.model instanceof joint.shapes.mcore.MType || cellView.model instanceof joint.shapes.mcore.MGeneralizationSet;
+	};
+	
+	this.canConnect = function(cellView){
+		return !(cellView.model instanceof joint.shapes.mcore.MGeneralizationSet)
+	};
+	
+	this.canResize = function(cellView){
+		return !(cellView.model instanceof joint.shapes.mcore.MGeneralizationSet)
+	};
+	
+	//======================================================================
+	
+	this.deleteShape = function(shape){
+		/** delete the genset-dashed link if the generalization is deleted */
+		var links = this.canvas.getGraph().getConnectedLinks(shape);
+		if(shape instanceof joint.dia.Link) links.push(shape);
+		_.each(links, (function(link){
+			if(link instanceof joint.shapes.mcore.MGeneralization){							
+				if(link.get('gslink')!=null && !_.isEmpty(link.get('gslink'))){
+					var gensetLinkView = this.canvas.getPaper().findViewByModel(link.get('gslink'));
+					this.canvas.getGraph().getCell(gensetLinkView.model.get("id")).remove();										
+				}				
+			}
+		}).bind(this));		
+		this.canvas.getGraph().getCell(shape.get("id")).remove();	
+	}
+		
+	this.addShape = function(shape, x, y){
+		if(x>0 && y>0) shape.set('position', {x: x, y: y});
+		this.canvas.getGraph().addCell(shape);
+	}
+	
+	this.duplicateShape = function(shape){
+		var newCell = this.canvas.getGraph().getCell(shape.get("id")).clone();
+		this.canvas.getGraph().addCell(newCell);								
+		newCell.translate(20, 20);
+		var cellView = this.canvas.getPaper().findViewByModel(newCell);		
+		return cellView;
+	}
+	
+	this.translateShape = function(shape, dx, dy){
+		var cell = this.canvas.getGraph().getCell(shape.get("id"));					
+		cell.translate(dx, dy);
+	}
+	
+	//==============================================================
+	
+	/** install editing features */
+	this.installEditingFeatures = function(){
+		var editor = $("<div id=\"editor\">"+
+			"<div class=\"resize nw\"></div>"+"<div class=\"resize n\"></div>" +"<div class=\"resize ne\"></div>"+"<div class=\"resize w\"></div>"+
+			"<div class=\"resize e\"></div>" +"<div class=\"resize se\"></div>"+"<div class=\"resize s\"></div>"+"<div class=\"resize sw\"></div>"+				
+			"<div class=\"tools delete\"></div>"+"<div class=\"tools duplicate\"></div>"+"<div class=\"tools connect\"></div>"+			
+		"</div>");
+		this.canvas.parent().append(editor);	
+		this.installDeleteElem();
+		this.installDeleteLink();
+		this.installConnect();
+		this.installDuplicate();
+		this.installResize();
+		return editor;		
+	};
+	
+	/** install a selection wrapper box for each diagram which envolves a number of single selections */
+	this.installSelectionFeatures = function(){		
+		var selectionWrapperBox = $("<div id=\"selection-wrapper\"> </div>");		
+		this.canvas.parent().append(selectionWrapperBox);		
+		this.canvas.getPaper().on('cell:pointerdown', (function(cellView, evt, x, y){						
+			Editor.lastEvent = evt;
+		}).bind(this));				
+		this.canvas.getPaper().on('cell:pointerclick', (function(cellView, evt, x, y){						
+			this.clickOnElement(cellView, evt);
+			Editor.lastEvent = evt;
+		}).bind(this));					
+		this.canvas.getPaper().on('cell:pointermove', (function(cellView, evt, x, y){			
+			if(Editor.lastEvent.type==="mousedown" && this.selected().length===0) { this.clickOnElement(cellView, evt); }
+			this.move(cellView, evt);
+			Editor.lastEvent = evt;		
+		}).bind(this));	
+		this.canvas.getPaper().on('cell:pointerdblclick', (function(cellView, evt, x, y){			
+			Editor.lastEvent = evt;
+		}).bind(this));		
+		this.canvas.getPaper().on('blank:pointerdown', (function(cellView, evt, x, y){
+			this.clickOnPaper(x,y);
+			Editor.lastEvent = evt;					
+		}).bind(this));		
+		return selectionWrapperBox;		
 	};
 	
 	/** install right click context menu */
@@ -44,69 +136,49 @@ function Editor(){
 		}).bind(this));
 	};
 	
-	/** install editing features */
-	this.installEditingFeatures = function(){
-		var editor = $(
-			"<div id=\"editor\">"+
-				"<div class=\"resize nw\"></div>"+
-				"<div class=\"resize n\"></div>"+
-				"<div class=\"resize ne\"></div>"+
-				"<div class=\"resize e\"></div>"+
-				"<div class=\"resize se\"></div>"+
-				"<div class=\"resize s\"></div>"+
-				"<div class=\"resize sw\"></div>"+
-				"<div class=\"resize w\"></div>"+
-				"<div class=\"tools delete\"></div>"+
-				"<div class=\"tools duplicate\"></div>"+
-				"<div class=\"tools connect\"></div>"+			
-			"</div>"
-		);
-		this.canvas.parent().append(editor);	
-		this.installDelete();
-		this.installConnect();
-		this.installDuplicate();
-		this.installResizeN()
-		this.installResizeS()
-		this.installResizeE()
-		this.installResizeW()
-		this.installResizeSE()
-		this.installResizeSW()
-		this.installResizeNW()
-		this.installResizeNE()
-		return editor;		
+	//==============================================================
+	
+	this.installDeleteElem = function(){
+		$(".delete").mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation(); this.deleteSelected(); }).bind(this));				
 	};
 	
-	/** install a selection wrapper box for each diagram which envolves a number of single selections */
-	this.installSelectionFeatures = function(){		
-		var selectionWrapperBox = $("<div id=\"selection-wrapper\"> </div>");		
-		this.canvas.parent().append(selectionWrapperBox);		
-		this.canvas.getPaper().on('cell:pointerdown', (function(cellView, evt, x, y){						
-			Editor.lastEvent = evt;
-		}).bind(this));				
-		this.canvas.getPaper().on('cell:pointerclick', (function(cellView, evt, x, y){						
-			this.clickOnCell(cellView, evt);
-			Editor.lastEvent = evt;
-		}).bind(this));					
-		this.canvas.getPaper().on('cell:pointermove', (function(cellView, evt, x, y){			
-			if(Editor.lastEvent.type==="mousedown") this.clickOnCell(cellView, evt);
-			this.moveCell(cellView, evt);
-			Editor.lastEvent = evt;		
-		}).bind(this));	
-		this.canvas.getPaper().on('cell:pointerdblclick', (function(cellView, evt, x, y){			
-			Editor.lastEvent = evt;
-		}).bind(this));		
-		this.canvas.getPaper().on('blank:pointerdown', (function(cellView, evt, x, y){
-			this.clickOnPaper(x,y);
-			Editor.lastEvent = evt;					
-		}).bind(this));		
-		return selectionWrapperBox;		
+	this.installDuplicate = function(){
+		$(".duplicate").mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation(); this.duplicateSelected(); }).bind(this));
 	};
+	
+	this.installConnect = function(){
+		$(".connect").mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation(); this.connectSelected(evt); }).bind(this));
+	};
+	
+	this.installResize = function(){
+		this.installResizeN();
+		this.installResizeS();
+		this.installResizeE();
+		this.installResizeW();
+		this.installResizeSE();
+		this.installResizeSW();
+		this.installResizeNW();
+		this.installResizeNE();
+	};
+
+	this.installDeleteLink = function(){
+		this.canvas.getPaper().on('cell:pointerdown', (function(cellView, evt, x, y) {
+			var toolRemove = $(evt.target).parents('.tool-remove')[0];
+			if (toolRemove) { 
+				cellView.options.interactive = false;
+				_.defer(function() { cellView.options.interactive = true; });	
+				this.deleteShape(cellView.model);				
+			}
+		}).bind(this));		
+	}
+	
+	//==============================================================
 	
 	this.clickOnPaper = function(x,y){
 		this.deselectAll();
 	};
 	
-	this.clickOnCell = function(cellView, evt){
+	this.clickOnElement = function(cellView, evt){
 		if(this.canSelect(cellView)){	
 			if (evt.ctrlKey || evt.metaKey) {
 				if(this.isSelected(cellView)) this.deselect(cellView);
@@ -117,21 +189,22 @@ function Editor(){
 			}				
 		}		
 	};
-		
-	this.moveCell = function(cellView, evt){
+	
+	this.move = function(cellView, evt){
 		if(this.canSelect(cellView)) {
 			this.updateCellBoxes(cellView);
 			_.each(this.selected(), (function(cellSelected){
 				if(cellSelected!=cellView){					
 					var dx = evt.clientX - Editor.lastEvent.clientX;					
 					var dy = evt.clientY - Editor.lastEvent.clientY;
-					var cell = this.canvas.getGraph().getCell(cellSelected.model.get("id"));					
-					cell.translate(dx, dy);				
+					this.translateShape(cellSelected.model, dx, dy);				
 					this.updateCellBoxes(cellSelected);
 				}						
 			}).bind(this));
 		}
 	};
+	
+	//==============================================================
 	
 	/** update the editor wrapper box over a cell */
 	this.updateEditor = function(cell, top, left, width, height){
@@ -141,11 +214,9 @@ function Editor(){
 			$("#editor").width(width);
 			$("#editor").height(height);			
 			$("#editor").show();
-			if(cell.model instanceof joint.shapes.mcore.MGeneralizationSet) { 
-				$(".connect").hide(); $(".s").hide(); $(".n").hide(); $(".sw").hide(); $(".nw").hide(); $(".se").hide(); $(".ne").hide(); $(".e").hide(); $(".w").hide();				
-			}else { 
-				$(".connect").show(); $(".s").show(); $(".n").show(); $(".sw").show(); $(".nw").show(); $(".se").show(); $(".ne").show(); $(".e").show(); $(".w").show();
-			}			
+			if(!this.canConnect(cell)) $(".connect").hide(); else $(".connect").show();
+			if(!this.canResize(cell)) { $(".s").hide(); $(".n").hide(); $(".sw").hide(); $(".nw").hide(); $(".se").hide(); $(".ne").hide(); $(".e").hide(); $(".w").hide(); }				
+			else { $(".s").show(); $(".n").show(); $(".sw").show(); $(".nw").show(); $(".se").show(); $(".ne").show(); $(".e").show(); $(".w").show(); }
 		}
 	};
 	
@@ -175,7 +246,7 @@ function Editor(){
 			selectionBox.width(width+2);
 			selectionBox.height(height+2);				
 			selectionBox.show();
-			this.canvas.displayGenSetLinks(cell,'block'); // show gen set links
+			this.canvas.displayGSLinks(cell,'block'); // show gen set links
 		}		
 	};
 	
@@ -187,7 +258,7 @@ function Editor(){
 				var e = document.getElementById('selection-wrapper');				
 				e.removeChild(selectionBox);
 			}
-			this.canvas.displayGenSetLinks(cell,'none'); // hide gen set links				
+			this.canvas.displayGSLinks(cell,'none'); // hide gen set links				
 		}
     };
 	
@@ -229,10 +300,10 @@ function Editor(){
 		var el = document.getElementById('selection-wrapper');
 		while (el.firstChild) el.removeChild(el.firstChild);	
 		this.hideEditor();	
-		this.canvas.displayAllGenSetLinks('none'); // hide all gen set links						
+		this.canvas.displayAllGSLinks('none'); // hide all gen set links						
 	};
 	
-	//=============================================================
+	//==============================================================
 	
 	/** the selected elements */
 	this.selected = function() { return Editor.selection; };
@@ -265,7 +336,7 @@ function Editor(){
 	/** delete selected elements */
 	this.deleteSelected = function(){
 		_.each(this.selected(), (function(selected){						
-			this.deleteCell(selected);				
+			this.deleteShape(selected.model);				
 		}).bind(this));
 		this.deselectAll();
 	};
@@ -275,10 +346,7 @@ function Editor(){
 		var newSelected = []
 		if(this.canvas==null) return;
 		_.each(this.selected(), (function(selected){						
-			var newCell = this.canvas.getGraph().getCell(selected.model.get("id")).clone();
-			this.canvas.getGraph().addCell(newCell);						
-			newCell.translate(20, 20);
-			var cellView = this.canvas.getPaper().findViewByModel(newCell);
+			var cellView = this.duplicateShape(selected.model);
 			newSelected.push(cellView);
 		}).bind(this));
 		this.deselectAll();
@@ -296,12 +364,7 @@ function Editor(){
 			selector: '.contextmenu', 
 			events: { hide:function(){ $.contextMenu( 'destroy' ); } },
 			callback: $.proxy((function(menukey, options) {                         
-				var links = this.connectMenu.createConnections(menukey, this.selected().length);
-				var idx = 0;
-				_.each(links, (function(link){
-					this.canvas.dragLinkFrom(evt, link, this.selected()[idx]);
-					idx++;
-				}).bind(this));
+				this.connectMenu.action(evt, menukey, this.canvas)
 			}).bind(this)),
 			items: menuItems
 		});	
@@ -314,22 +377,6 @@ function Editor(){
 			this.destroyCellBoxes(cellView);
 			remove(this.selected(), cellView);
 		}	
-	};
-	
-	/** delete a particular element/link view */
-	this.deleteCell = function(cellView){			
-		/** delete the genset-dashed link if the generalization is deleted */
-		var links = this.canvas.getGraph().getConnectedLinks(cellView.model);
-		if(cellView.model instanceof joint.dia.Link) links.push(cellView.model);
-		_.each(links, (function(link){			
-			if(link instanceof joint.shapes.mcore.MGeneralization){							
-				if(!_.isEmpty(link.get('link'))){
-					var gensetLinkView = this.canvas.getPaper().findViewByModel(link.get('link'));
-					this.canvas.getGraph().getCell(gensetLinkView.model.get("id")).remove();										
-				}				
-			}
-		}).bind(this));		
-		this.canvas.getGraph().getCell(cellView.model.get("id")).remove();
 	};
 	
 	/** check is an element view is selected */
@@ -346,12 +393,7 @@ function Editor(){
 			this.updateCellBoxes(cellView); 
 		}
 	};
-	
-	/** check if we can select an element view */
-	this.canSelect = function(cellView){
-		return cellView.model instanceof joint.shapes.mcore.MType || cellView.model instanceof joint.shapes.mcore.MGeneralizationSet;
-	};
-	
+		
 	/** align selected elements at bottom */	
 	this.alignSelectedAtBottom = function(){		
 		var bottom = this.selectedAtBottom();		
@@ -606,24 +648,6 @@ function Editor(){
 			_.last(link.get('vertices')).y = centerPoint(node2).y;
 		}, this);
 	}
-
-	//============================================================================
-	
-	this.installDelete = function(){
-		$(".delete").mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation(); this.deleteSelected(); }).bind(this));
-		$('.tool-remove').mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation(); 
-			var cellView = this.canvas.getPaper().findView(evt.target);			
-			this.deleteCell(cellView); 
-		}).bind(this));
-	};
-	
-	this.installDuplicate = function(){
-		$(".duplicate").mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation(); this.duplicateSelected(); }).bind(this));
-	};
-	
-	this.installConnect = function(){
-		$(".connect").mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation(); this.connectSelected(evt); }).bind(this));
-	};
 	
 	this.installResizeN = function(){
 		$(".n").mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation();
@@ -656,21 +680,21 @@ function Editor(){
 	this.installResizeSE = function(){
 		$(".se").mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation();
 			$("body").mouseup  ((function(evt){ evt.preventDefault(); evt.stopPropagation(); $("body").unbind(); }).bind(this));
-			$("body").mousemove((function(evt){ resizeSE(this, this.evt, canvas.getGraph()) }).bind(this));
+			$("body").mousemove((function(evt){ resizeSE(this, evt, canvas.getGraph()) }).bind(this));
 		}).bind(this));	
 	};
 
 	this.installResizeSW = function(){
 		$(".sw").mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation();
 			$("body").mouseup  ((function(evt){ evt.preventDefault(); evt.stopPropagation(); $("body").unbind(); }).bind(this));
-			$("body").mousemove((function(evt){	resizeSW(this, this.evt, canvas.getGraph()) }).bind(this));
+			$("body").mousemove((function(evt){	resizeSW(this, evt, canvas.getGraph()) }).bind(this));
 		}).bind(this));
 	};
 		
 	this.installResizeNW = function(){
 		$(".nw").mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation();
 			$("body").mouseup  ((function(evt){ evt.preventDefault(); evt.stopPropagation(); $("body").unbind(); }).bind(this));
-			$("body").mousemove((function(evt){ resizeNW(this, this.evt, canvas.getGraph()) }).bind(this));
+			$("body").mousemove((function(evt){ resizeNW(this, evt, canvas.getGraph()) }).bind(this));
 		}).bind(this));	
 	};
 	
@@ -681,47 +705,47 @@ function Editor(){
 		}).bind(this));
 	};
 	
-	var resizeN = function(Editor, evt, graph){
-		_.each(Editor.selected(), function(cellView){ resizeCellN(Editor, evt, graph, cellView); });
+	var resizeN = function(editor, evt, graph){
+		_.each(editor.selected(), function(cellView){ resizeCellN(editor, evt, graph, cellView); });
 		Editor.lastEvent = evt;
 	};
 	
-	var resizeS = function(Editor, evt, graph){ 
-		_.each(Editor.selected(), function(cellView){ resizeCellS(Editor, evt, graph, cellView); });
+	var resizeS = function(editor, evt, graph){ 
+		_.each(editor.selected(), function(cellView){ resizeCellS(editor, evt, graph, cellView); });
 		Editor.lastEvent = evt;
 	};
 	
-	var resizeE = function(Editor, evt, graph){
-		_.each(Editor.selected(), function(cellView){ resizeCellE(Editor, evt, graph, cellView); });
+	var resizeE = function(editor, evt, graph){
+		_.each(editor.selected(), function(cellView){ resizeCellE(editor, evt, graph, cellView); });
 		Editor.lastEvent = evt;
 	};
 	
-	var resizeSE = function(Editor, evt, graph){
-		_.each(Editor.selected(), function(cellView){ resizeCellSE(Editor, evt, graph, cellView); });
+	var resizeSE = function(editor, evt, graph){
+		_.each(editor.selected(), function(cellView){ resizeCellSE(editor, evt, graph, cellView); });
 		Editor.lastEvent = evt;
 	};
 	
-	var resizeNE = function(Editor, evt, graph){
-		_.each(Editor.selected(), function(cellView){ resizeCellNE(Editor, evt, graph, cellView); });
+	var resizeNE = function(editor, evt, graph){
+		_.each(editor.selected(), function(cellView){ resizeCellNE(editor, evt, graph, cellView); });
 		Editor.lastEvent = evt;
 	};
 	
-	var resizeSW = function(Editor, evt, graph){
-		_.each(Editor.selected(), function(cellView){ resizeOnSouthweast(Editor, evt, graph, cellView); });
+	var resizeSW = function(editor, evt, graph){
+		_.each(editor.selected(), function(cellView){ resizeCellSW(editor, evt, graph, cellView); });
 		Editor.lastEvent = evt;
 	};
 	
-	var resizeNW = function(Editor, evt, graph){
-		_.each(Editor.selected(), function(cellView){ resizeCellNW(Editor, evt, graph, cellView); });
+	var resizeNW = function(editor, evt, graph){
+		_.each(editor.selected(), function(cellView){ resizeCellNW(editor, evt, graph, cellView); });
 		Editor.lastEvent = evt;
 	};
 	
-	var resizeW = function(Editor, evt, graph){
-		_.each(Editor.selected(), function(cellView){ resizeCellW(Editor, evt, graph, cellView); });
+	var resizeW = function(editor, evt, graph){
+		_.each(editor.selected(), function(cellView){ resizeCellW(editor, evt, graph, cellView); });
 		Editor.lastEvent = evt;
 	};
 	
-	var resizeCellN = function(Editor, evt, graph, cellView){
+	var resizeCellN = function(editor, evt, graph, cellView){
 		if(Editor.lastEvent != null){
 			var cell = graph.getCell(cellView.model.get("id"));
 			var view = $("#"+cellView.id);
@@ -729,46 +753,46 @@ function Editor(){
 			if(cell.get("size").height > 10 || step > 0){
 				cell.translate(0, -(step));
 				cell.resize(cell.get("size").width, cell.get("size").height+(step));
-				Editor.updateCellBoxes(cellView);
+				editor.updateCellBoxes(cellView);
 			}
 		}		
 	}
 	
-	var resizeCellS = function(Editor, evt, graph, cellView){
+	var resizeCellS = function(editor, evt, graph, cellView){
 		if(Editor.lastEvent != null){
 			var cell = graph.getCell(cellView.model.get("id"));
 			var step = Math.abs(Editor.lastEvent.pageY-evt.pageY) > 10?(Editor.lastEvent.pageY-evt.pageY > 0?10:-10):Editor.lastEvent.pageY-evt.pageY;
 			if(cell.get("size").height > 10 || step < 0){
 				cell.resize(cell.get("size").width, cell.get("size").height-(step));				
-				Editor.updateCellBoxes(cellView);
+				editor.updateCellBoxes(cellView);
 			}
 		}		
 	};
 		
-	var resizeCellW = function(Editor, evt, graph, cellView){
+	var resizeCellW = function(editor, evt, graph, cellView){
 		if(Editor.lastEvent != null){
 			var cell = graph.getCell(cellView.model.get("id"));
 			var step = Math.abs(Editor.lastEvent.pageX-evt.pageX) > 10?(Editor.lastEvent.pageX-evt.pageX > 0?10:-10):Editor.lastEvent.pageX-evt.pageX;			
 			if(cell.get("size").width > 10 || step > 0){
 				cell.translate(-(step), 0);
 				cell.resize(cell.get("size").width+(step), cell.get("size").height);
-				Editor.updateCellBoxes(cellView);
+				editor.updateCellBoxes(cellView);
 			}
 		}		
 	};
 	
-	var resizeCellE = function(Editor, evt, graph, cellView){
+	var resizeCellE = function(editor, evt, graph, cellView){
 		if(Editor.lastEvent != null){
 			var cell = graph.getCell(cellView.model.get("id"));
 			var step = Math.abs(Editor.lastEvent.pageX-evt.pageX) > 10?(Editor.lastEvent.pageX-evt.pageX > 0?10:-10):Editor.lastEvent.pageX-evt.pageX;				
 			if(cell.get("size").width > 10 || step < 0){
 				cell.resize(cell.get("size").width-(step), cell.get("size").height);
-				Editor.updateCellBoxes(cellView);
+				editor.updateCellBoxes(cellView);
 			}
 		}		
 	};
 		
-	var resizeCellSE = function(Editor, evt, graph, cellView){
+	var resizeCellSE = function(editor, evt, graph, cellView){
 		if(Editor.lastEvent != null){
 			var cell = graph.getCell(cellView.model.get("id"));
 			var stepX = Math.abs(Editor.lastEvent.pageX-evt.pageX) > 10?(Editor.lastEvent.pageX-evt.pageX > 0?10:-10):Editor.lastEvent.pageX-evt.pageX;
@@ -779,11 +803,11 @@ function Editor(){
 			if(cell.get("size").height > 10 || stepY < 0){
 				cell.resize(cell.get("size").width, cell.get("size").height-(stepY));						
 			}
-			Editor.updateCellBoxes(cellView);
+			editor.updateCellBoxes(cellView);
 		}		
 	};
 
-	var resizeCellNE = function(Editor, evt, graph, cellView){		
+	var resizeCellNE = function(editor, evt, graph, cellView){		
 		if(Editor.lastEvent != null){
 			var cell = graph.getCell(cellView.model.get("id"));
 			var stepX = Math.abs(Editor.lastEvent.pageX-evt.pageX) > 10?(Editor.lastEvent.pageX-evt.pageX > 0?10:-10):Editor.lastEvent.pageX-evt.pageX;
@@ -795,11 +819,11 @@ function Editor(){
 				cell.translate(0, -(stepY));
 				cell.resize(cell.get("size").width, cell.get("size").height+(stepY));
 			}
-			Editor.updateCellBoxes(cellView);
+			editor.updateCellBoxes(cellView);
 		}		
 	};
 	
-	var resizeCellSW = function(Editor, evt, graph, cellView){		
+	var resizeCellSW = function(editor, evt, graph, cellView){		
 		if(Editor.lastEvent != null){
 			var cell = graph.getCell(cellView.model.get("id"));
 			var stepX = Math.abs(Editor.lastEvent.pageX-evt.pageX) > 10?(Editor.lastEvent.pageX-evt.pageX > 0?10:-10):Editor.lastEvent.pageX-evt.pageX;
@@ -811,11 +835,11 @@ function Editor(){
 			if(cell.get("size").height > 10 || stepY < 0){
 				cell.resize(cell.get("size").width, cell.get("size").height-stepY);
 			}
-			Editor.updateCellBoxes(cellView);
+			editor.updateCellBoxes(cellView);
 		}		
 	};
 	
-	var resizeCellNW = function(Editor, evt, graph, cellView){	
+	var resizeCellNW = function(editor, evt, graph, cellView){	
 		if(Editor.lastEvent != null){
 			var cell = graph.getCell(cellView.model.get("id"));
 			var stepX = Math.abs(Editor.lastEvent.pageX-evt.pageX) > 10?(Editor.lastEvent.pageX-evt.pageX > 0?10:-10):Editor.lastEvent.pageX-evt.pageX;
@@ -828,7 +852,7 @@ function Editor(){
 				cell.translate(0, -(stepY));
 				cell.resize(cell.get("size").width, cell.get("size").height+(stepY));
 			}
-			Editor.updateCellBoxes(cellView);
+			editor.updateCellBoxes(cellView);
 		}		
 	};		
 }

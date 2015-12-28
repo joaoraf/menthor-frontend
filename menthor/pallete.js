@@ -23,7 +23,7 @@ function Pallete(){
 			interactive: false,
 			model: this.palGraph
 		});	
-		this.palGraph.addCells(this.elements());
+		this.palGraph.addCells(this.shapes());
 	};
 	
 	/** getters and setters */
@@ -31,46 +31,41 @@ function Pallete(){
 	this.el = function(){ return $('#'+this.$id) };	
 	this.id = function(){ return $id; };
 	
-	/** the set of elements in this pallete */
-	this.elements = function(){
-		var class_ = this.createElement(joint.shapes.mcore.MClass,'Class',10,10,null);
-		var dataType = this.createElement(joint.shapes.mcore.MDataType,'DataType',110, 10, null);	
-		var genset = this.createElement(joint.shapes.mcore.MGeneralizationSet,'',10, 60, null);
-		genset.set('size',{width: 195, height: 20});
-		return [class_, dataType, genset]
+	/** the set of shapes in this pallete */
+	this.shapes = function(){		
+		var classShape = this.createShape(joint.shapes.mcore.MClass,10,10);				
+		var dataTypeShape = this.createShape(joint.shapes.mcore.MDataType,110, 10);					
+		var genSetShape = this.createShape(joint.shapes.mcore.MGeneralizationSet,10, 60);
+		genSetShape.set('size',{width: 195, height: 20});				
+		return [classShape, dataTypeShape, genSetShape]
 	};
-		
-	/** auxiliary method to create an element on this pallete */
-	this.createElement = function (class_, name, x, y, stereotype) {
-		return new class_({
-			position: { x: x  , y: y },
-			name: name,
-			stereotype: stereotype,
-		});
+	
+	/** auxiliary method to create shapes in the pallete */
+	this.createShape = function (shape_type, x, y) {
+		return new shape_type({position: { x: x  , y: y }});
 	};
 	
 	/** enable drag and drop on a canvas. The same pallete can enable dnd into several canvases */
 	this.enableDnd = function(canvas){
 		this.palPaper.on('cell:pointerdown', (function(cellView, evt, x, y){		
-			var fake = $("<div class='dnd'><div id='dnd'></div></div>").appendTo("body").css("left", x+"px").css("top", y+"px");	
-			var fakeElem = this.createElement(eval(cellView.model.get("type")), cellView.model.get("name"), 0, 0, cellView.model.get("stereotype"));
+			var fake = $("<div class='dnd'><div id='dnd'></div></div>").appendTo("body").css("left", evt.pageX-45+"px").css("top", evt.pageY-30+"px");				
 			var fakeGraph = new joint.dia.Graph;
+			var fakeShape = this.palGraph.getCell(cellView.model.get("id")).clone(); //create fake shape
+			fakeShape.set('position',{x:0,y:0});
 			var fakePaper = new joint.dia.Paper({
 				el: $('#dnd'),
-				width: fakeElem.get('size').width,
-				height: fakeElem.get('size').height,
-				gridSize: 1,
+				width: fakeShape.get('size').width,
+				height: fakeShape.get('size').height,				
 				model: fakeGraph
-			}); 		
-			fakeGraph.addCell(fakeElem);
+			});			
+			fakeGraph.addCell(fakeShape);
 			$("body").mousemove(function(evt){
 				fake.css("left", (evt.pageX-45)+"px").css("top", (evt.pageY-30)+"px");
 			});
 			$("body").mouseup((function(evt) {
-				if(evt.pageX-this.parent().width()-40 > 0){//if we are on target paper (canvas) we add the new element
-					
-					var elem = this.createElement(eval(cellView.model.get("type")), cellView.model.get("name"), evt.pageX-this.parent().width()-40, evt.pageY-40, cellView.model.get("stereotype"));				
-					canvas.getGraph().addCell(elem);
+				if(evt.pageX-this.parent().width()-40 > 0){//if we are on target paper (canvas) we add the new element					
+					var realShape = this.palGraph.getCell(cellView.model.get("id")).clone(); //create real shape					
+					canvas.getEditor().addShape(realShape,evt.pageX-this.parent().width()-40,evt.pageY-40);					
 					$("body").unbind("mousemove");
 					$("body").unbind("mouseup");			    	
 				}

@@ -11,7 +11,7 @@ function RightClickContextMenu(){
 		if(menukey==="manhatan") contextView.model.set('router', { name: 'manhattan' });
 		if(menukey==="metro") contextView.model.set('router', { name: 'metro' });
 		if(menukey==="orthogonal") contextView.model.set('router', { name: 'orthogonal' });						
-		if(menukey==="linktogenset") canvas.dragGenToGenSet(contextView, evt);			
+		if(menukey==="linktogenset") canvas.dragGSLink(contextView, evt);			
 		if(menukey==="verticaltree") canvas.getEditor().verticalTreeRouter(contextView); 
 		if(menukey==="horizontaltree") canvas.getEditor().horizontalTreeRouter(contextView);						
 		if(menukey==="bottom") canvas.getEditor().alignSelectedAtBottom();
