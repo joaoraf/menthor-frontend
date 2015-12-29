@@ -62,33 +62,20 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 	isPartEssential: function() { return this.get('content').essentialPart; },	
 	isWholeImmutable: function() { return this.get('content').immutableWhole; },	
 	isPartInseparable: function() { return this.get('content').inseparablePart; },
-	isPartImmutable: function() { return this.get('content').immutablePart; },	
-	getFullLabelName: function(){ return this.getName()+"\n"+this.getStereotype() },
+	isPartImmutable: function() { return this.get('content').immutablePart; },		
 	getStereotype: function() {
 		if(this.get('content').stereotype!=null && this.get('content').stereotype!="") return "\u00AB"+this.get('content').stereotype+"\u00BB"; 
 		else return "";
     },	
-	
+		
 	initialize: function() {		
 		joint.shapes.mcore.MRelationship.prototype.initialize.apply(this, arguments);		
 		this.updateShape();				
-		this.on('add change:content.stereotype',function() { this.updateStereotypeLabel(); this.updateShape(); }, this);		
-		this.on('add change:content.essentialPart change:content.immutablePart change:content.immutableWhole change:content.inseparablePart', 
-		function() { this.updateMetaAttributeLabels(); }, this);
+		this.installMetaAttributeLabels();
+		this.installStereotypeLabel();		
     },	
-	
-	updateStereotypeLabel: function(){					
-		var txt = this.getStereotype();
-		if(this.getStereotypeName()=='derivation') txt = ""
-		this.label(3, {
-			position: 0.5,
-			attrs: {
-				rect: { fill: 'white' }, text: { dy: 10, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: txt }
-			},
-		});				
-	},
-	
-	getMetaAttributesLabelName: function(){
+			
+	metaAttrsLabelDisplayName: function(){
 		if(this.isPartEssential() && this.isWholeImmutable()) return "{essentialPart, immutableWhole}"
 		if(this.isPartEssential() && this.isPartInseparable()) return "{essentialPart, inseparablePart}"
 		if(this.isPartEssential()) return "{essentialPart}"
@@ -97,13 +84,25 @@ joint.shapes.ontouml.Relationship = joint.shapes.mcore.MRelationship.extend({
 		if(this.isPartImmutable()) return "{immutablePart}"
 		if(this.isWholeImmutable()) return "{immutableWhole}"
 		if(this.isPartInseparable()) return "{inseparablePart}"
+		return ''
 	},
-		
-	updateMetaAttributeLabels: function(){
+	
+	installStereotypeLabel: function(){					
+		var txt = this.getStereotype();
+		if(this.getStereotypeName()=='derivation') txt = ""
+		this.label(3, {
+			position: 0.5,
+			attrs: {
+				rect: { fill: 'white' }, text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, dy: 15, text: txt }
+			},
+		});				
+	},
+	
+	installMetaAttributeLabels: function(){		
 		this.label(4, {
             position: 0.5,
             attrs: {
-                rect: { fill: 'white' }, text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getMetaAttributesLabelName() }
+                rect: { fill: 'white' }, text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, dy: 30, text: this.metaAttrsLabelDisplayName() }
             },
         });	
 	},

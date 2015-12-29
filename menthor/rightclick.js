@@ -19,7 +19,8 @@ function RightClickContextMenu(){
 		if(menukey==="left") canvas.getEditor().alignSelectedAtLeft();
 		if(menukey==="right") canvas.getEditor().alignSelectedAtRight();
 		if(menukey==="centerhorizontally") canvas.getEditor().alignSelectedOnCenterHorizontally();
-		if(menukey==="centervertically") canvas.getEditor().alignSelectedOnCenterVertically();		
+		if(menukey==="centervertically") canvas.getEditor().alignSelectedOnCenterVertically();	
+		if(menukey==="rename") canvas.getEditor().askForAName(contextView);	
 	};
 	
 	/** items of the context menu according to the seleccted cell view */
@@ -28,6 +29,7 @@ function RightClickContextMenu(){
 		if(cellView.model instanceof joint.shapes.mcore.MGeneralization) map["linktogenset"] = {name: "Generalization Set"};
 		if(cellView.model instanceof joint.dia.Link) map["treestyle"] = treestyle();
 		if(cellView.model instanceof joint.shapes.mcore.MType) map["alignments"] = alignments();
+		if(!(cellView.model instanceof joint.shapes.mcore.MGeneralization)) map["rename"] = {name: "Rename" };
 		return map;		
 	};
 	

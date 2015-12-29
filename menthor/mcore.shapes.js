@@ -52,13 +52,21 @@ joint.shapes.mcore.MType = joint.shapes.basic.Generic.extend({
 	},
 			
 	initialize: function(){		
-		joint.shapes.basic.Generic.prototype.initialize.apply(this, arguments);		
-		this.on('change:content.name change:content.attributes', function() { this.updateRectangles(); this.trigger('mtype-update'); }, this);		
-        this.updateRectangles();		        
+		joint.shapes.basic.Generic.prototype.initialize.apply(this, arguments);				
+		this.updateRectangles();
     },
 	
 	getWidth: function(){ return this.get('size').width; },	
 	getHeight: function(){ return this.get('size').height; },	
+	
+	updateViewOn: function(paper){
+		var cellView = this.findView(paper);
+		if(cellView!=null){
+			this.updateRectangles(); 
+			cellView.update(); 
+			cellView.resize();
+		}
+	},
 	
 	updateRectangles: function() {        
         var rects = [
@@ -112,15 +120,6 @@ joint.shapes.mcore.MType = joint.shapes.basic.Generic.extend({
 	},	
 });
 
-//need this inheritance to resize he element properly 
-joint.shapes.mcore.MTypeView = joint.dia.ElementView.extend({
-	
-    initialize: function() {		
-        joint.dia.ElementView.prototype.initialize.apply(this, arguments);
-        this.listenTo(this.model, 'mtype-update', function() { this.update(); this.resize(); });
-    }
-});
-
 joint.shapes.mcore.MClass = joint.shapes.mcore.MType.extend({
 	
 	defaults: joint.util.deepSupplement({
@@ -167,38 +166,50 @@ joint.shapes.mcore.MGeneralizationSet = joint.shapes.basic.Rect.extend({
 	getName: function() { return this.get('content').name; },
 	
 	metaAttributesText: function(){
-		var text = "";
+		var text = '';
 		if(this.isDisjoint() && !this.isComplete()) text = "{disjoint}";
 		if(!this.isDisjoint() && this.isComplete()) text = "{complete'}";
 		if(this.isDisjoint() && this.isComplete()) text = "{disjoint, complete}";
 		if(!this.isDisjoint() && !this.isComplete()) text = "{}";
+		if(this.getName()!=null && this.getName()!='') text = this.getName()+" "+text;
 		return text;		
 	},
 	
-	updateText: function(){ this.get('attrs').text.text = this.metaAttributesText(); },
+	updateText: function(){ 
+		this.get('attrs').text.text = this.metaAttributesText(); 
+	},
 	
 	setDefaultSize: function(){
 		this.set('size', { width: 125, height: 20 });
 	},
 	
 	initialize: function() {
-        joint.shapes.basic.Rect.prototype.initialize.apply(this, arguments);
-		this.on('add change:content.complete change:content.disjoint',function() { this.updateText(); }, this);
+        joint.shapes.basic.Rect.prototype.initialize.apply(this, arguments);	
+		this.updateText();
 		this.setDefaultSize();
+	},
+	
+	updateViewOn: function(paper){
+		var cellView = this.findView(paper);
+		if(cellView!=null){	
+			this.updateText();
+			this.setDefaultSize();
+			cellView.update(); 
+		}
 	},
 });
   
-joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
+joint.shapes.mcore.MGeneralization = joint.dia.Link.extend({
 	
 	defaults: joint.util.deepSupplement({  
 		type: 'joint.shapes.mcore.MGeneralization',
 		attrs: { '.marker-target': { d: 'M 18 0 L 0 10 L 18 18 z', fill: 'white' }},
 		content: new MGeneralization(), //reference to the abstract syntax
 		gslink: [], 	
-	}, joint.shapes.uml.Generalization.prototype.defaults),
+	}, joint.dia.Link.prototype.defaults),
 	
 	initialize: function() {
-        joint.shapes.uml.Generalization.prototype.initialize.apply(this, arguments);
+        joint.dia.Link.prototype.initialize.apply(this, arguments);
     },
 	
 	//getters to the abstract syntax values
@@ -209,23 +220,37 @@ joint.shapes.mcore.MGeneralization = joint.shapes.uml.Generalization.extend({
 	getGeneralizationSetShape: function(){ return this.get('gslink').get('target') },	
 	getGeneralShape: function(){ return this.get('target') },
 	getSpecificShape: function(){ return this.get('source') },	
+	
+	updateViewOn: function(paper){
+		var cellView = this.findView(paper);
+		if(cellView!=null){			
+			cellView.update(); 
+		}
+	},
 });
   
-joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
+joint.shapes.mcore.MRelationship = joint.dia.Link.extend({
 	
     defaults: joint.util.deepSupplement({ 		
-		type: 'joint.shapes.mcore.MRelationship',
-		labels: [],
+		type: 'joint.shapes.mcore.MRelationship',	
 		content: new MRelationship(), //reference to the abstract syntax
-	}, joint.shapes.uml.Association.prototype.defaults),
+	}, joint.dia.Link.prototype.defaults),
 	
 	initialize: function() {				
-		joint.shapes.uml.Association.prototype.initialize.apply(this, arguments);	
-		this.on('add change:content.endPoints[0].multiplicity change:content.endPoints[0].dependency change:content.endPoints[0].ordered', function() { this.updateCornerLabels(); }, this);
-		this.on('add change:content.endPoints[1].multiplicity change:content.endPoints[1].dependency change:content.endPoints[1].ordered', function() { this.updateCornerLabels(); }, this);		
-		this.on('add change:content.name',function() { this.updateNameLabel(); }, this);
+		joint.dia.Link.prototype.initialize.apply(this, arguments);	
+		this.installCornerLabels();
+		this.installCenterLabel();
     },
 	
+	updateViewOn: function(paper){
+		var cellView = this.findView(paper);
+		if(cellView!=null){		
+			this.installCornerLabels();
+			this.installCenterLabel();
+			cellView.update(); 
+		}
+	},
+		
 	//getters to the abstract syntax values
 	getName: function(){ return this.get('content').name }, 	
 	getSourceMultiplicity: function(){ return this.get('content').endPoints[0].multiplicity },	
@@ -246,7 +271,11 @@ joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
 	getSourceOrderedLabelName: function(){ return "ordered" },	
 	getTargetOrderedLabelName: function(){ return "ordered" },	
 		
-	getSourceFullLabelName: function(){
+	displayName: function(){
+		return this.getName();
+	},
+	
+	srcLabelDisplayName: function(){
 		if(this.getSourceMultiplicity()!=null){
 			if(this.isSourceOrdered() && this.isSourceDependent()){
 				return this.getSourceMultiplicity() + "\n{"+this.getSourceOrderedLabelName()+",\n"+this.getSourceDependentLabelName()+"}";				
@@ -260,7 +289,7 @@ joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
 		}
 	},
 	
-	getTargetFullLabelName: function(){
+	tgtLabelDisplayName: function(){
 		if(this.getTargetMultiplicity()!=null){
 			if(this.isTargetOrdered() && this.isTargetDependent()){
 				return this.getTargetMultiplicity() + "\n{"+this.getTargetOrderedLabelName()+",\n"+this.getTargetDependentLabelName()+"}";				
@@ -274,29 +303,39 @@ joint.shapes.mcore.MRelationship = joint.shapes.uml.Association.extend({
 		}
 	},
 	
-	updateNameLabel: function(){
+	installCenterLabel: function(){
 		this.label(0, {
             position: 0.5,
             attrs: {
-                rect: { fill: 'white' }, text: { dy:-7.5, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getName() }
+                rect: { fill: 'white' }, text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, dy:-15, text: this.displayName() }
             },
-        });				
+        });			
 	},
 	
-	updateCornerLabels: function(){	
-		var offset = 0
-		if(this.getSourceFullLabelName().length>5) offset = (this.getSourceFullLabelName().length+5)
+	installSourceLabel: function(){
+		var offsetSrc = 0
+		if(this.srcLabelDisplayName().length>5) offsetSrc = (this.srcLabelDisplayName().length+5)
 		this.label(1, {
-			position: -15-offset,
+			position: -15-offsetSrc,
 			attrs: {
-				rect: { fill: 'white' }, text: { 'dy':-7.5, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getSourceFullLabelName() }
+				rect: { fill: 'white' }, text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, dy:-15, text: this.srcLabelDisplayName() }
 			}
-		});	    	
-		this.label(2, {
-			position: 15+offset,
-			attrs: {
-				rect: { fill: 'white' }, text: { 'dy':-7.5, fill: 'black', 'font-family': 'Arial', 'font-size':12, text: this.getTargetFullLabelName() }
-			}
-		});		
+		});	
 	},
+	
+	installTargetLabel: function(){
+		var offsetTgt = 0
+		if(this.tgtLabelDisplayName().length>5) offsetTgt = (this.tgtLabelDisplayName().length+5)
+		this.label(2, {
+			position: 15+offsetTgt,
+			attrs: {
+				rect: { fill: 'white' }, text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, dy:-15, text: this.tgtLabelDisplayName() }
+			}
+		});	
+	},
+	
+	installCornerLabels: function(){	
+		this.installSourceLabel();
+		this.installTargetLabel();
+	},	
 });

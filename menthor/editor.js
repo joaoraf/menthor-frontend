@@ -50,7 +50,7 @@ function Editor(){
 					this.canvas.getGraph().getCell(gensetLinkView.model.get("id")).remove();										
 				}				
 			}
-		}).bind(this));		
+		}).bind(this));
 		this.canvas.getGraph().getCell(shape.get("id")).remove();	
 	}
 		
@@ -96,18 +96,22 @@ function Editor(){
 		this.canvas.parent().append(selectionWrapperBox);		
 		this.canvas.getPaper().on('cell:pointerdown', (function(cellView, evt, x, y){						
 			Editor.lastEvent = evt;
+			console.log("pointer down")
 		}).bind(this));				
 		this.canvas.getPaper().on('cell:pointerclick', (function(cellView, evt, x, y){						
 			this.clickOnElement(cellView, evt);
+			console.log("pointer click")
 			Editor.lastEvent = evt;
 		}).bind(this));					
 		this.canvas.getPaper().on('cell:pointermove', (function(cellView, evt, x, y){			
-			if(Editor.lastEvent.type==="mousedown" && this.selected().length===0) { this.clickOnElement(cellView, evt); }
+			if(Editor.lastEvent.type==="mousedown") { this.clickOnElement(cellView, evt); }
 			this.move(cellView, evt);
+			console.log("pointer move")
 			Editor.lastEvent = evt;		
 		}).bind(this));	
 		this.canvas.getPaper().on('cell:pointerdblclick', (function(cellView, evt, x, y){			
 			Editor.lastEvent = evt;
+			console.log("pointer double click")
 		}).bind(this));		
 		this.canvas.getPaper().on('blank:pointerdown', (function(cellView, evt, x, y){
 			this.clickOnPaper(x,y);
@@ -134,6 +138,14 @@ function Editor(){
 				$('.contextmenu').contextMenu({x: evt.clientX, y: evt.clientY});
 			}
 		}).bind(this));
+	};
+			
+	this.askForAName = function(cellView){
+		var name = prompt("Please, enter the name:", cellView.model.get('content').name);
+		if (name != null) { 
+			cellView.model.get('content').name = name; 
+			cellView.model.updateViewOn(this.canvas.getPaper()); 
+		}			
 	};
 	
 	//==============================================================
@@ -191,6 +203,7 @@ function Editor(){
 	};
 	
 	this.move = function(cellView, evt){
+		console.log(cellView.model);
 		if(this.canSelect(cellView)) {
 			this.updateCellBoxes(cellView);
 			_.each(this.selected(), (function(cellSelected){

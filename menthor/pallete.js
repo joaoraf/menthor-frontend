@@ -63,6 +63,7 @@ function Pallete(){
 				fake.css("left", (evt.pageX-45)+"px").css("top", (evt.pageY-30)+"px");
 			});
 			$("body").mouseup((function(evt) {
+				canvas.getEditor().askForAName(cellView);				
 				if(evt.pageX-this.parent().width()-40 > 0){//if we are on target paper (canvas) we add the new element					
 					var realShape = this.palGraph.getCell(cellView.model.get("id")).clone(); //create real shape					
 					canvas.getEditor().addShape(realShape,evt.pageX-this.parent().width()-40,evt.pageY-40);					
