@@ -1,6 +1,6 @@
 
 /** last event registred */
-Editor.lastEvent = null;
+Editor.events = [];
 
 /** selected elements (jointjs views) */
 Editor.selection = [];
@@ -23,6 +23,43 @@ function Editor(){
 	};
 	
 	//======================================================================
+	
+	this.recordEvent = function(evt){
+		Editor.events.push(evt);
+		if(Editor.events.length>10){
+			Editor.events.shift();
+		}
+	}
+	
+	this.lastRecordedEvent = function(){
+		return Editor.events[Editor.events.length-1];
+	}
+	
+	this.lastRecordedEvent = function(){
+		if(Editor.events.length>0) return Editor.events[Editor.events.length-1];
+		return null;
+	}
+	
+	this.penultRecordedEvent = function(){
+		if(Editor.events.length>1) return Editor.events[Editor.events.length-2];
+		return null;
+	}
+	
+	this.antipenultRecordedEvent = function(){
+		if(Editor.events.length>2) return Editor.events[Editor.events.length-3];
+		return null;
+	}
+	
+	//======================================================================
+	
+	/** the selected elements */
+	this.selected = function() { return Editor.selection; };
+	
+	/** the first element selected */
+	this.firstSelected = function(){ return this.selected()[0]; };
+	
+	/** the last element selected */
+	this.lastSelected = function(){ return this.selected()[this.selected().length-1]; };
 	
 	/** check if we can select an element view */
 	this.canSelect = function(cellView){
@@ -72,6 +109,14 @@ function Editor(){
 		cell.translate(dx, dy);
 	}
 	
+	this.askForAName = function(cellView){
+		var name = prompt("Please, enter the name:", cellView.model.get('content').name);
+		if (name != null) { 
+			cellView.model.get('content').name = name; 
+			cellView.model.updateViewOn(this.canvas.getPaper()); 
+		}			
+	};
+	
 	//==============================================================
 	
 	/** install editing features */
@@ -95,27 +140,22 @@ function Editor(){
 		var selectionWrapperBox = $("<div id=\"selection-wrapper\"> </div>");		
 		this.canvas.parent().append(selectionWrapperBox);		
 		this.canvas.getPaper().on('cell:pointerdown', (function(cellView, evt, x, y){						
-			Editor.lastEvent = evt;
-			console.log("pointer down")
+			this.recordEvent(evt);
 		}).bind(this));				
 		this.canvas.getPaper().on('cell:pointerclick', (function(cellView, evt, x, y){						
 			this.clickOnElement(cellView, evt);
-			console.log("pointer click")
-			Editor.lastEvent = evt;
+			this.recordEvent(evt);
 		}).bind(this));					
 		this.canvas.getPaper().on('cell:pointermove', (function(cellView, evt, x, y){			
-			if(Editor.lastEvent.type==="mousedown") { this.clickOnElement(cellView, evt); }
 			this.move(cellView, evt);
-			console.log("pointer move")
-			Editor.lastEvent = evt;		
+			this.recordEvent(evt);				
 		}).bind(this));	
 		this.canvas.getPaper().on('cell:pointerdblclick', (function(cellView, evt, x, y){			
-			Editor.lastEvent = evt;
-			console.log("pointer double click")
+			this.recordEvent(evt);
 		}).bind(this));		
 		this.canvas.getPaper().on('blank:pointerdown', (function(cellView, evt, x, y){
 			this.clickOnPaper(x,y);
-			Editor.lastEvent = evt;					
+			this.recordEvent(evt);				
 		}).bind(this));		
 		return selectionWrapperBox;		
 	};
@@ -139,16 +179,6 @@ function Editor(){
 			}
 		}).bind(this));
 	};
-			
-	this.askForAName = function(cellView){
-		var name = prompt("Please, enter the name:", cellView.model.get('content').name);
-		if (name != null) { 
-			cellView.model.get('content').name = name; 
-			cellView.model.updateViewOn(this.canvas.getPaper()); 
-		}			
-	};
-	
-	//==============================================================
 	
 	this.installDeleteElem = function(){
 		$(".delete").mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation(); this.deleteSelected(); }).bind(this));				
@@ -203,13 +233,13 @@ function Editor(){
 	};
 	
 	this.move = function(cellView, evt){
-		console.log(cellView.model);
 		if(this.canSelect(cellView)) {
+			if(!this.isSelected(cellView)) { this.deselectAll(); this.select(cellView); }
 			this.updateCellBoxes(cellView);
 			_.each(this.selected(), (function(cellSelected){
 				if(cellSelected!=cellView){					
-					var dx = evt.clientX - Editor.lastEvent.clientX;					
-					var dy = evt.clientY - Editor.lastEvent.clientY;
+					var dx = evt.clientX - this.lastRecordedEvent().clientX;					
+					var dy = evt.clientY - this.lastRecordedEvent().clientY;
 					this.translateShape(cellSelected.model, dx, dy);				
 					this.updateCellBoxes(cellSelected);
 				}						
@@ -317,15 +347,6 @@ function Editor(){
 	};
 	
 	//==============================================================
-	
-	/** the selected elements */
-	this.selected = function() { return Editor.selection; };
-	
-	/** the first element selected */
-	this.firstSelected = function(){ return this.selected()[0]; };
-	
-	/** the last element selected */
-	this.lastSelected = function(){ return this.selected()[this.selected().length-1]; };
 	
 	/** deselect all elements */
 	this.deselectAll = function(){ this.destroyBoxes(); Editor.selection = []; };
@@ -720,49 +741,50 @@ function Editor(){
 	
 	var resizeN = function(editor, evt, graph){
 		_.each(editor.selected(), function(cellView){ resizeCellN(editor, evt, graph, cellView); });
-		Editor.lastEvent = evt;
+		editor.recordEvent(evt);
 	};
 	
 	var resizeS = function(editor, evt, graph){ 
 		_.each(editor.selected(), function(cellView){ resizeCellS(editor, evt, graph, cellView); });
-		Editor.lastEvent = evt;
+		editor.recordEvent(evt);
 	};
 	
 	var resizeE = function(editor, evt, graph){
 		_.each(editor.selected(), function(cellView){ resizeCellE(editor, evt, graph, cellView); });
-		Editor.lastEvent = evt;
+		editor.recordEvent(evt);
 	};
 	
 	var resizeSE = function(editor, evt, graph){
 		_.each(editor.selected(), function(cellView){ resizeCellSE(editor, evt, graph, cellView); });
-		Editor.lastEvent = evt;
+		editor.recordEvent(evt);
 	};
 	
 	var resizeNE = function(editor, evt, graph){
 		_.each(editor.selected(), function(cellView){ resizeCellNE(editor, evt, graph, cellView); });
-		Editor.lastEvent = evt;
+		editor.recordEvent(evt);
 	};
 	
 	var resizeSW = function(editor, evt, graph){
 		_.each(editor.selected(), function(cellView){ resizeCellSW(editor, evt, graph, cellView); });
-		Editor.lastEvent = evt;
+		editor.recordEvent(evt);
 	};
 	
 	var resizeNW = function(editor, evt, graph){
 		_.each(editor.selected(), function(cellView){ resizeCellNW(editor, evt, graph, cellView); });
-		Editor.lastEvent = evt;
+		editor.recordEvent(evt);
 	};
 	
 	var resizeW = function(editor, evt, graph){
 		_.each(editor.selected(), function(cellView){ resizeCellW(editor, evt, graph, cellView); });
-		Editor.lastEvent = evt;
+		editor.recordEvent(evt);
 	};
 	
 	var resizeCellN = function(editor, evt, graph, cellView){
-		if(Editor.lastEvent != null){
+		if(editor.lastRecordedEvent() != null){
 			var cell = graph.getCell(cellView.model.get("id"));
 			var view = $("#"+cellView.id);
-			var step = Math.abs(Editor.lastEvent.pageY-evt.pageY) > 10?(Editor.lastEvent.pageY-evt.pageY > 0?10:-10):Editor.lastEvent.pageY-evt.pageY;
+			var lastevt = editor.lastRecordedEvent();
+			var step = Math.abs(lastevt.pageY-evt.pageY) > 10?(lastevt.pageY-evt.pageY > 0?10:-10):lastevt.pageY-evt.pageY;
 			if(cell.get("size").height > 10 || step > 0){
 				cell.translate(0, -(step));
 				cell.resize(cell.get("size").width, cell.get("size").height+(step));
@@ -772,9 +794,10 @@ function Editor(){
 	}
 	
 	var resizeCellS = function(editor, evt, graph, cellView){
-		if(Editor.lastEvent != null){
+		if(editor.lastRecordedEvent() != null){
 			var cell = graph.getCell(cellView.model.get("id"));
-			var step = Math.abs(Editor.lastEvent.pageY-evt.pageY) > 10?(Editor.lastEvent.pageY-evt.pageY > 0?10:-10):Editor.lastEvent.pageY-evt.pageY;
+			var lastevt = editor.lastRecordedEvent();
+			var step = Math.abs(lastevt.pageY-evt.pageY) > 10?(lastevt.pageY-evt.pageY > 0?10:-10):lastevt.pageY-evt.pageY;
 			if(cell.get("size").height > 10 || step < 0){
 				cell.resize(cell.get("size").width, cell.get("size").height-(step));				
 				editor.updateCellBoxes(cellView);
@@ -783,9 +806,10 @@ function Editor(){
 	};
 		
 	var resizeCellW = function(editor, evt, graph, cellView){
-		if(Editor.lastEvent != null){
+		if(editor.lastRecordedEvent() != null){
 			var cell = graph.getCell(cellView.model.get("id"));
-			var step = Math.abs(Editor.lastEvent.pageX-evt.pageX) > 10?(Editor.lastEvent.pageX-evt.pageX > 0?10:-10):Editor.lastEvent.pageX-evt.pageX;			
+			var lastevt = editor.lastRecordedEvent();
+			var step = Math.abs(lastevt.pageX-evt.pageX) > 10?(lastevt.pageX-evt.pageX > 0?10:-10):lastevt.pageX-evt.pageX;			
 			if(cell.get("size").width > 10 || step > 0){
 				cell.translate(-(step), 0);
 				cell.resize(cell.get("size").width+(step), cell.get("size").height);
@@ -795,9 +819,10 @@ function Editor(){
 	};
 	
 	var resizeCellE = function(editor, evt, graph, cellView){
-		if(Editor.lastEvent != null){
+		if(editor.lastRecordedEvent() != null){
 			var cell = graph.getCell(cellView.model.get("id"));
-			var step = Math.abs(Editor.lastEvent.pageX-evt.pageX) > 10?(Editor.lastEvent.pageX-evt.pageX > 0?10:-10):Editor.lastEvent.pageX-evt.pageX;				
+			var lastevt = editor.lastRecordedEvent();
+			var step = Math.abs(lastevt.pageX-evt.pageX) > 10?(lastevt.pageX-evt.pageX > 0?10:-10):lastevt.pageX-evt.pageX;				
 			if(cell.get("size").width > 10 || step < 0){
 				cell.resize(cell.get("size").width-(step), cell.get("size").height);
 				editor.updateCellBoxes(cellView);
@@ -806,10 +831,11 @@ function Editor(){
 	};
 		
 	var resizeCellSE = function(editor, evt, graph, cellView){
-		if(Editor.lastEvent != null){
+		if(editor.lastRecordedEvent() != null){
 			var cell = graph.getCell(cellView.model.get("id"));
-			var stepX = Math.abs(Editor.lastEvent.pageX-evt.pageX) > 10?(Editor.lastEvent.pageX-evt.pageX > 0?10:-10):Editor.lastEvent.pageX-evt.pageX;
-			var stepY = Math.abs(Editor.lastEvent.pageY-evt.pageY) > 10?(Editor.lastEvent.pageY-evt.pageY > 0?10:-10):Editor.lastEvent.pageY-evt.pageY;				
+			var lastevt = editor.lastRecordedEvent();
+			var stepX = Math.abs(lastevt.pageX-evt.pageX) > 10?(lastevt.pageX-evt.pageX > 0?10:-10):lastevt.pageX-evt.pageX;
+			var stepY = Math.abs(lastevt.pageY-evt.pageY) > 10?(lastevt.pageY-evt.pageY > 0?10:-10):lastevt.pageY-evt.pageY;				
 			if(cell.get("size").width > 10 || stepX < 0){
 				cell.resize(cell.get("size").width-(stepX), cell.get("size").height);
 			}
@@ -821,10 +847,11 @@ function Editor(){
 	};
 
 	var resizeCellNE = function(editor, evt, graph, cellView){		
-		if(Editor.lastEvent != null){
+		if(editor.lastRecordedEvent() != null){
 			var cell = graph.getCell(cellView.model.get("id"));
-			var stepX = Math.abs(Editor.lastEvent.pageX-evt.pageX) > 10?(Editor.lastEvent.pageX-evt.pageX > 0?10:-10):Editor.lastEvent.pageX-evt.pageX;
-			var stepY = Math.abs(Editor.lastEvent.pageY-evt.pageY) > 10?(Editor.lastEvent.pageY-evt.pageY > 0?10:-10):Editor.lastEvent.pageY-evt.pageY;				
+			var lastevt = editor.lastRecordedEvent();
+			var stepX = Math.abs(lastevt.pageX-evt.pageX) > 10?(lastevt.pageX-evt.pageX > 0?10:-10):lastevt.pageX-evt.pageX;
+			var stepY = Math.abs(lastevt.pageY-evt.pageY) > 10?(lastevt.pageY-evt.pageY > 0?10:-10):lastevt.pageY-evt.pageY;				
 			if(cell.get("size").width > 10 || stepX < 0){
 				cell.resize(cell.get("size").width-(stepX), cell.get("size").height);						
 			}					
@@ -837,10 +864,11 @@ function Editor(){
 	};
 	
 	var resizeCellSW = function(editor, evt, graph, cellView){		
-		if(Editor.lastEvent != null){
+		if(editor.lastRecordedEvent() != null){
 			var cell = graph.getCell(cellView.model.get("id"));
-			var stepX = Math.abs(Editor.lastEvent.pageX-evt.pageX) > 10?(Editor.lastEvent.pageX-evt.pageX > 0?10:-10):Editor.lastEvent.pageX-evt.pageX;
-			var stepY = Math.abs(Editor.lastEvent.pageY-evt.pageY) > 10?(Editor.lastEvent.pageY-evt.pageY > 0?10:-10):Editor.lastEvent.pageY-evt.pageY;				
+			var lastevt = editor.lastRecordedEvent();
+			var stepX = Math.abs(lastevt.pageX-evt.pageX) > 10?(lastevt.pageX-evt.pageX > 0?10:-10):lastevt.pageX-evt.pageX;
+			var stepY = Math.abs(lastevt.pageY-evt.pageY) > 10?(lastevt.pageY-evt.pageY > 0?10:-10):lastevt.pageY-evt.pageY;				
 			if(cell.get("size").width > 10 || stepX > 0){
 				cell.translate(-stepX, 0);
 				cell.resize(cell.get("size").width+stepX, cell.get("size").height);
@@ -853,10 +881,11 @@ function Editor(){
 	};
 	
 	var resizeCellNW = function(editor, evt, graph, cellView){	
-		if(Editor.lastEvent != null){
+		if(editor.lastRecordedEvent() != null){
 			var cell = graph.getCell(cellView.model.get("id"));
-			var stepX = Math.abs(Editor.lastEvent.pageX-evt.pageX) > 10?(Editor.lastEvent.pageX-evt.pageX > 0?10:-10):Editor.lastEvent.pageX-evt.pageX;
-			var stepY = Math.abs(Editor.lastEvent.pageY-evt.pageY) > 10?(Editor.lastEvent.pageY-evt.pageY > 0?10:-10):Editor.lastEvent.pageY-evt.pageY;				
+			var lastevt = editor.lastRecordedEvent();
+			var stepX = Math.abs(lastevt.pageX-evt.pageX) > 10?(lastevt.pageX-evt.pageX > 0?10:-10):lastevt.pageX-evt.pageX;
+			var stepY = Math.abs(lastevt.pageY-evt.pageY) > 10?(lastevt.pageY-evt.pageY > 0?10:-10):lastevt.pageY-evt.pageY;				
 			if(cell.get("size").width > 10 || stepX > 0){
 				cell.translate(-(stepX), 0);
 				cell.resize(cell.get("size").width+(stepX), cell.get("size").height);
