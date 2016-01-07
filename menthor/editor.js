@@ -22,59 +22,59 @@ function Editor(){
 		this.installRightClickMenu();
 	};
 	
-	//======================================================================
+	/** ----- Events ----- */
 	
 	this.recordEvent = function(evt){
 		Editor.events.push(evt);
 		if(Editor.events.length>10){
 			Editor.events.shift();
 		}
-	}
-	
-	this.lastRecordedEvent = function(){
-		return Editor.events[Editor.events.length-1];
-	}
-	
-	this.lastRecordedEvent = function(){
+	}	
+	this.lastRecordedEvent = function(){ return Editor.events[Editor.events.length-1]; }	
+	this.lastRecordedEvent = function(){ 
 		if(Editor.events.length>0) return Editor.events[Editor.events.length-1];
 		return null;
-	}
-	
+	}	
 	this.penultRecordedEvent = function(){
 		if(Editor.events.length>1) return Editor.events[Editor.events.length-2];
 		return null;
-	}
-	
+	}	
 	this.antipenultRecordedEvent = function(){
 		if(Editor.events.length>2) return Editor.events[Editor.events.length-3];
 		return null;
 	}
 	
-	//======================================================================
+	/** ----- Selection ----- */
 	
 	/** the selected elements */
-	this.selected = function() { return Editor.selection; };
-	
+	this.selected = function() { return Editor.selection; };	
 	/** the first element selected */
-	this.firstSelected = function(){ return this.selected()[0]; };
-	
+	this.firstSelected = function(){ return this.selected()[0]; };	
 	/** the last element selected */
-	this.lastSelected = function(){ return this.selected()[this.selected().length-1]; };
-	
+	this.lastSelected = function(){ return this.selected()[this.selected().length-1]; };	
 	/** check if we can select an element view */
 	this.canSelect = function(cellView){
 		return cellView.model instanceof joint.shapes.mcore.MType || cellView.model instanceof joint.shapes.mcore.MGeneralizationSet;
-	};
-	
+	};	
 	this.canConnect = function(cellView){
 		return !(cellView.model instanceof joint.shapes.mcore.MGeneralizationSet)
-	};
-	
+	};	
 	this.canResize = function(cellView){
 		return !(cellView.model instanceof joint.shapes.mcore.MGeneralizationSet)
 	};
+	/** check is an element view is selected */
+	this.isSelected = function(cellView){
+		if($.inArray(cellView, this.selected())<0) return false;
+		else return true;
+	};
+		
+	/** ----- CRUD about Shapes & Links ----- */
 	
-	//======================================================================
+	this.addShape = function(shape, x, y){
+		if(x>0 && y>0) shape.set('position', {x: x, y: y});
+		this.canvas.getGraph().addCell(shape);	
+		console.log(shape.getContent())
+	}
 	
 	this.deleteShape = function(shape){
 		/** delete the genset-dashed link if the generalization is deleted */
@@ -90,17 +90,14 @@ function Editor(){
 		}).bind(this));
 		this.canvas.getGraph().getCell(shape.get("id")).remove();	
 	}
-		
-	this.addShape = function(shape, x, y){
-		if(x>0 && y>0) shape.set('position', {x: x, y: y});
-		this.canvas.getGraph().addCell(shape);
-	}
 	
 	this.duplicateShape = function(shape){
-		var newCell = this.canvas.getGraph().getCell(shape.get("id")).clone();
-		this.canvas.getGraph().addCell(newCell);								
-		newCell.translate(20, 20);
-		var cellView = this.canvas.getPaper().findViewByModel(newCell);		
+		var newshape = shape.cloneShape(this.canvas.getGraph());		
+		this.canvas.getGraph().addCell(newshape);		
+		this.renameWithUpdate(newshape);
+		newshape.translate(20, 20);		
+		console.log(newshape.getContent())
+		var cellView = this.canvas.getPaper().findViewByModel(newshape);		
 		return cellView;
 	}
 	
@@ -109,17 +106,71 @@ function Editor(){
 		cell.translate(dx, dy);
 	}
 	
-	this.askForAName = function(cellView){
-		var name = prompt("Please, enter the name:", cellView.model.get('content').name);
+	this.renameWithUpdate = function(shape){
+		this.renameShape(shape);
+		shape.updateViewOn(this.canvas.getPaper()); 	
+	}	
+	this.renameShape = function(shape){
+		var name = prompt("Please, enter the name:", shape.getContent().name);
 		if (name != null) { 
-			cellView.model.get('content').name = name; 
-			cellView.model.updateViewOn(this.canvas.getPaper()); 
-		}			
+			shape.getContent().name = name; 
+		}
+		return shape
 	};
 	
-	//==============================================================
+	this.startDraggingLink = function(link, srcShape, evt){
+		link.set("source", {id: srcShape.model.get("id")});
+		link.set("target", this.canvas.getPaper().snapToGrid({x: evt.clientX, y: evt.clientY }));			
+		this.canvas.getGraph().addCell(link, {validation: false});
+		var linkView = this.canvas.getPaper().findViewByModel(link);
+		linkView.startArrowheadMove("target");
+		return linkView;
+	}
+	this.endDroppingGSLink = function(genView, evt){
+		genView.model.getGSLink().set('source',midPoint(genView));			
+		genView.model.getGSLink().attr('./display', 'none');
+		var tgtShape = null;
+		var tgtShapes = this.shapesAt(evt);
+		if(tgtShapes!=null && tgtShapes.length>0) tgtShape = tgtShapes[0];	
+		genView.model.getContent().generalizationSet = tgtShape.getContent();			
+		tgtShape.getContent().generalizations.push(genView.model.getContent());
+	}
 	
-	/** install editing features */
+	this.startDraggingGSLink = function(genView, evt){
+		var gslink = genView.model.createGSLink(this.canvas.getPaper(), this.canvas.getGraph());			
+		this.canvas.getGraph().addCell(gslink, {validation: false});		
+		var linkView = this.canvas.getPaper().findViewByModel(gslink);
+		linkView.startArrowheadMove("target");	
+		//update link position if source/target are translated
+		this.canvas.getGraph().getCell(genView.model.get('source').id).on('add change:position', function(){ gslink.set('source', midPoint(genView)); });
+		this.canvas.getGraph().getCell(genView.model.get('target').id).on('add change:position', function(){ gslink.set('source', midPoint(genView)); });
+		return linkView;
+	}	
+	this.endDroppingLink = function(linkView, srcShape, evt){
+		var link = linkView.model;
+		var tgtShape = null;
+		var tgtShapes = this.shapesAt(evt);
+		if(tgtShapes!=null && tgtShapes.length>0) tgtShape = tgtShapes[0];	
+		if(link instanceof joint.shapes.mcore.MGeneralization) {
+			link.getContent().specific = srcShape.getContent();
+			link.getContent().general = tgtShape.getContent();
+		}
+		if(link instanceof joint.shapes.mcore.MRelationship) {
+			link.getContent().source = srcShape.getContent();
+			link.getContent().target = tgtShape.getContent();
+		}				
+	}
+	
+	/**------- Auxiliary Methods --------*/
+	
+	/** return all shapes in a particular point coordinate of an event */
+	this.shapesAt = function(evt){
+		var coords = this.canvas.getPaper().snapToGrid({x: evt.clientX, y: evt.clientY });
+		var shapes = this.canvas.getGraph().findModelsFromPoint({ x:coords.x, y:coords.y });	
+		return shapes;
+	}
+	
+	/** install editing */
 	this.installEditingFeatures = function(){
 		var editor = $("<div id=\"editor\">"+
 			"<div class=\"resize nw\"></div>"+"<div class=\"resize n\"></div>" +"<div class=\"resize ne\"></div>"+"<div class=\"resize w\"></div>"+
@@ -135,7 +186,7 @@ function Editor(){
 		return editor;		
 	};
 	
-	/** install a selection wrapper box for each diagram which envolves a number of single selections */
+	/** install selection */
 	this.installSelectionFeatures = function(){		
 		var selectionWrapperBox = $("<div id=\"selection-wrapper\"> </div>");		
 		this.canvas.parent().append(selectionWrapperBox);		
@@ -147,16 +198,16 @@ function Editor(){
 			this.recordEvent(evt);
 		}).bind(this));					
 		this.canvas.getPaper().on('cell:pointermove', (function(cellView, evt, x, y){			
-			this.move(cellView, evt);
+			this.move(cellView, evt);			
 			this.recordEvent(evt);				
 		}).bind(this));	
 		this.canvas.getPaper().on('cell:pointerdblclick', (function(cellView, evt, x, y){			
 			this.recordEvent(evt);
 		}).bind(this));		
 		this.canvas.getPaper().on('blank:pointerdown', (function(cellView, evt, x, y){
-			this.clickOnPaper(x,y);
+			this.deselectAll();
 			this.recordEvent(evt);				
-		}).bind(this));		
+		}).bind(this));	
 		return selectionWrapperBox;		
 	};
 	
@@ -214,12 +265,6 @@ function Editor(){
 		}).bind(this));		
 	}
 	
-	//==============================================================
-	
-	this.clickOnPaper = function(x,y){
-		this.deselectAll();
-	};
-	
 	this.clickOnElement = function(cellView, evt){
 		if(this.canSelect(cellView)){	
 			if (evt.ctrlKey || evt.metaKey) {
@@ -246,8 +291,6 @@ function Editor(){
 			}).bind(this));
 		}
 	};
-	
-	//==============================================================
 	
 	/** update the editor wrapper box over a cell */
 	this.updateEditor = function(cell, top, left, width, height){
@@ -346,8 +389,6 @@ function Editor(){
 		this.canvas.displayAllGSLinks('none'); // hide all gen set links						
 	};
 	
-	//==============================================================
-	
 	/** deselect all elements */
 	this.deselectAll = function(){ this.destroyBoxes(); Editor.selection = []; };
 	
@@ -412,13 +453,7 @@ function Editor(){
 			remove(this.selected(), cellView);
 		}	
 	};
-	
-	/** check is an element view is selected */
-	this.isSelected = function(cellView){
-		if($.inArray(cellView, this.selected())<0) return false;
-		else return true;
-	};
-	
+		
 	/** select an element view */
 	this.select = function(cellView){
 		if(!this.isSelected(cellView)) {
@@ -626,62 +661,6 @@ function Editor(){
 		});
 		return top;
 	};
-	
-	/** vertical tree style on a line */
-	this.verticalTreeRouter = function(linkView){
-		var link = linkView.model;
-		var node1 = this.canvas.getGraph().getCell(link.get('source').id);
-		var node2 = this.canvas.getGraph().getCell(link.get('target').id);
-		var direction = getDirectionFromTo(node1, node2);
-		if(direction=='S_N' || direction=='SE_NW' || direction=='SW_NE') {	    
-			link.set('vertices',[]);		
-			linkView.addVertex({x:centerPoint(node2).x, y: endPoint(node2).y+30});
-			linkView.addVertex({x:centerPoint(node1).x, y: endPoint(node2).y+30});		
-			linkView.update();		
-		}else if (direction=='N_S'||direction=='NW_SE'||direction=='NE_SW'){
-			link.set('vertices',[]);		
-			linkView.addVertex({x:centerPoint(node2).x, y: startPoint(node2).y-30});
-			linkView.addVertex({x:centerPoint(node1).x, y: startPoint(node2).y-30});		
-			linkView.update();		
-		}else{
-			link.set('vertices',{});
-			return;
-		}	  
-		node1.on('add change:position', function() { 
-			_.first(link.get('vertices')).x = centerPoint(node1).x;
-		}, this);
-		node2.on('add change:position', function() { 
-			_.last(link.get('vertices')).x = centerPoint(node2).x;
-		}, this);
-	}
-
-	/** horizontal tree style on a line */
-	this.horizontalTreeRouter = function(linkView){
-		var link = linkView.model;
-		var node1 = this.canvas.getGraph().getCell(link.get('source').id);
-		var node2 = this.canvas.getGraph().getCell(link.get('target').id);	
-		var direction = getDirectionFromTo(node1, node2);
-		if(direction=='E_W' || direction=='SE_NW' || direction=='NE_SW') {	    
-			link.set('vertices',[]);				
-			linkView.addVertex({x:endPoint(node2).x+30, y: centerPoint(node2).y});		
-			linkView.addVertex({x:endPoint(node2).x+30, y: centerPoint(node1).y});
-			linkView.update();		
-		}else if (direction=='W_E'||direction=='NW_SE'||direction=='SW_NE'){
-			link.set('vertices',[]);				
-			linkView.addVertex({x:startPoint(node2).x-30, y: centerPoint(node2).y});		
-			linkView.addVertex({x:startPoint(node2).x-30, y: centerPoint(node1).y});
-			linkView.update();		
-		}else{
-			link.set('vertices',{});
-			return;		
-		}	  
-		node1.on('add change:position', function() { 
-			_.first(link.get('vertices')).y = centerPoint(node1).y;
-		}, this);
-		node2.on('add change:position', function() { 
-			_.last(link.get('vertices')).y = centerPoint(node2).y;
-		}, this);
-	}
 	
 	this.installResizeN = function(){
 		$(".n").mousedown((function(evt){ evt.preventDefault(); evt.stopPropagation();
@@ -897,4 +876,140 @@ function Editor(){
 			editor.updateCellBoxes(cellView);
 		}		
 	};		
+	
+	/** direct style on a line */
+	this.directRouter = function(linkView){		
+		var link = linkView.model;
+		var node1 = this.canvas.getGraph().getCell(link.get('source').id);
+		var node2 = this.canvas.getGraph().getCell(link.get('target').id);		
+		link.set('vertices',{});
+		linkView.update();	
+		node1.on('add change:position', function() { link.set('vertices',{}); linkView.update(); }, this);
+		node2.on('add change:position', function() { link.set('vertices',{}); linkView.update(); }, this);
+	}
+	
+	/** left square style on a line */
+	this.leftSquareRouter = function(linkView){
+		this.setupLeftSquareVertices(linkView);
+		var link = linkView.model;
+		var node1 = this.canvas.getGraph().getCell(link.get('source').id);
+		var node2 = this.canvas.getGraph().getCell(link.get('target').id);		
+		node1.on('add change:position', function() { this.setupLeftSquareVertices(linkView);}, this);
+		node2.on('add change:position', function() { this.setupLeftSquareVertices(linkView);}, this);
+	}
+	
+	/** right square style on a line */
+	this.rightSquareRouter = function(linkView){
+		this.setupRightSquareVertices(linkView);
+		var link = linkView.model;
+		var node1 = this.canvas.getGraph().getCell(link.get('source').id);
+		var node2 = this.canvas.getGraph().getCell(link.get('target').id);		
+		node1.on('add change:position', function() { this.setupRightSquareVertices(linkView);}, this);
+		node2.on('add change:position', function() { this.setupRightSquareVertices(linkView);}, this);
+	}
+	
+	/** vertical tree style on a line */
+	this.verticalTreeRouter = function(linkView){
+		this.setupVerticalTreeVertices(linkView);
+		var link = linkView.model;
+		var node1 = this.canvas.getGraph().getCell(link.get('source').id);
+		var node2 = this.canvas.getGraph().getCell(link.get('target').id);		
+		node1.on('add change:position', function() { this.setupVerticalTreeVertices(linkView);}, this);
+		node2.on('add change:position', function() { this.setupVerticalTreeVertices(linkView);}, this);
+	}
+	
+	/** horizontal tree style on a line */
+	this.horizontalTreeRouter = function(linkView){
+		this.setupHorizontalTreeVertices(linkView);
+		var link = linkView.model;
+		var node1 = this.canvas.getGraph().getCell(link.get('source').id);
+		var node2 = this.canvas.getGraph().getCell(link.get('target').id);			
+		node1.on('add change:position', function() { this.setupHorizontalTreeVertices(linkView); }, this);
+		node2.on('add change:position', function() { this.setupHorizontalTreeVertices(linkView); }, this);
+	}
+	
+	/** setup the vertices in the vertical tree style */
+	this.setupVerticalTreeVertices = function(linkView){
+		var link = linkView.model;
+		var node1 = this.canvas.getGraph().getCell(link.get('source').id);
+		var node2 = this.canvas.getGraph().getCell(link.get('target').id);
+		var direction = getDirectionFromTo(node1, node2);
+		if(direction=='S_N' || direction=='SE_NW' || direction=='SW_NE') {	    
+			link.set('vertices',[]);		
+			linkView.addVertex({x:centerPoint(node2).x, y: endPoint(node2).y+30});
+			linkView.addVertex({x:centerPoint(node1).x, y: endPoint(node2).y+30});		
+			linkView.update();		
+		}else if (direction=='N_S'||direction=='NW_SE'||direction=='NE_SW'){
+			link.set('vertices',[]);		
+			linkView.addVertex({x:centerPoint(node2).x, y: startPoint(node2).y-30});
+			linkView.addVertex({x:centerPoint(node1).x, y: startPoint(node2).y-30});		
+			linkView.update();		
+		}else{
+			link.set('vertices',{});
+			linkView.update();	
+			return;
+		}	 
+	};
+	
+	this.setupLeftSquareVertices = function(linkView){
+		var link = linkView.model;
+		var node1 = this.canvas.getGraph().getCell(link.get('source').id);
+		var node2 = this.canvas.getGraph().getCell(link.get('target').id);
+		var direction = getDirectionFromTo(node1, node2);
+		if(direction=='S_N' || direction=='SE_NW' || direction=='NE_SW') {	    
+			link.set('vertices',[]);		
+			linkView.addVertex({x:centerPoint(node2).x, y: centerPoint(node1).y});			
+			linkView.update();		
+		}else if (direction=='N_S'||direction=='NW_SE'||direction=='SW_NE'){
+			link.set('vertices',[]);		
+			linkView.addVertex({x:centerPoint(node1).x, y: centerPoint(node2).y});			
+			linkView.update();		
+		}else{
+			link.set('vertices',{});
+			linkView.update();	
+			return;
+		}	 
+	}
+	
+	this.setupRightSquareVertices = function(linkView){
+		var link = linkView.model;
+		var node1 = this.canvas.getGraph().getCell(link.get('source').id);
+		var node2 = this.canvas.getGraph().getCell(link.get('target').id);
+		var direction = getDirectionFromTo(node1, node2);
+		if(direction=='S_N' || direction=='SE_NW' || direction=='NE_SW') {	    
+			link.set('vertices',[]);		
+			linkView.addVertex({x:centerPoint(node1).x, y: centerPoint(node2).y});			
+			linkView.update();		
+		}else if (direction=='N_S'||direction=='NW_SE'||direction=='SW_NE'){
+			link.set('vertices',[]);		
+			linkView.addVertex({x:centerPoint(node2).x, y: centerPoint(node1).y});			
+			linkView.update();		
+		}else{
+			link.set('vertices',{});
+			linkView.update();	
+			return;
+		}	
+	}
+	
+	/** setup the vertices in the horizontal tree style */
+	this.setupHorizontalTreeVertices = function(linkView){
+		var link = linkView.model;
+		var node1 = this.canvas.getGraph().getCell(link.get('source').id);
+		var node2 = this.canvas.getGraph().getCell(link.get('target').id);	
+		var direction = getDirectionFromTo(node1, node2);
+		if(direction=='E_W' || direction=='SE_NW' || direction=='NE_SW') {	    
+			link.set('vertices',[]);				
+			linkView.addVertex({x:endPoint(node2).x+30, y: centerPoint(node2).y});		
+			linkView.addVertex({x:endPoint(node2).x+30, y: centerPoint(node1).y});
+			linkView.update();		
+		}else if (direction=='W_E'||direction=='NW_SE'||direction=='SW_NE'){
+			link.set('vertices',[]);				
+			linkView.addVertex({x:startPoint(node2).x-30, y: centerPoint(node2).y});		
+			linkView.addVertex({x:startPoint(node2).x-30, y: centerPoint(node1).y});
+			linkView.update();		
+		}else{
+			link.set('vertices',{});
+			return;		
+		}	  
+	}	
 }

@@ -5,6 +5,23 @@ function extend(Child, Parent) {
   Child.prototype.constructor = Child
 }
 
+function stereotypeByName(stereotypes, name){
+	var result = null
+	_.each(stereotypes, function(s){
+		if(s.name===name) {
+			result = s.stereotype;
+		}
+	});
+	return result;
+}
+
+function nameByStereotype(stereotypes, stereotype){
+	_.each(stereotype, function(s){
+		if(s.stereotype == stereotype) return s.name;
+	});
+	return null;
+}
+
 function remove(array, item) {
   for(var i = array.length; i--;) {
 	  if(array[i] === item) {

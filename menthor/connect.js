@@ -5,9 +5,11 @@ function ConnectContextMenu(){
 	this.language = "MCore"
 	
 	/** map containing the connection shape name and type */
-	this.map = { 
-		'Generalization': 'joint.shapes.mcore.MGeneralization', 
-		'Relationship': 'joint.shapes.mcore.MRelationship'
+	this.map = function(){
+		var m = {}
+		m['Generalization'] = 'joint.shapes.mcore.MGeneralization';
+		m['Relationship'] = 'joint.shapes.mcore.MRelationship';
+		return m;		
 	}
 	
 	this.action = function(evt, menukey, canvas){
@@ -22,7 +24,7 @@ function ConnectContextMenu(){
 	/** context menu items based on the connections map */
 	this.items = function(){
 		var menuItems = {};
-		for(key in this.map){
+		for(key in this.map()){
 			var k = (String(key)).toLowerCase()
 			menuItems[k] = {name: String(key)}
 		}
@@ -32,7 +34,7 @@ function ConnectContextMenu(){
 	/** axiliary method to create N connection shapes for a given click on the context menu */
 	this.createConnections = function (menukey, numberOfConnections) {
 		var conns = []
-		var connClass = eval(this.map[this.items()[menukey].name]);
+		var connClass = eval(this.map()[this.items()[menukey].name]);
 		var stereotype = (String(menukey)).toLowerCase();
 		for(var i=0; i<numberOfConnections; i++){
 			conns.push(new connClass());

@@ -1,19 +1,42 @@
 
 /** ===========================
-  * MCore - Abstract Syntax
+  * MCore 1.0 - Abstract Syntax
   * 
   * There is no good solution in javascript to subclassing arrays. 
-  * That's why we replicated the arrays in some leafs of the hierarchy.
+  * That's why we replicated some arrays in the leafs of the hierarchy.
   * =========================== */
 
-MElement.counter = 0; //generate unique identifier to elements
+/** Stereotypes */
 
-function MElement(){	
-	MElement.counter++;		
-	this.id = MElement.counter;
-}
+var PrimitiveStereotype = {
+  INTEGER : {value: 0, name: "Integer", stereotype: "integer"}, 
+  REAL    : {value: 1, name: "Real", stereotype: "real"}, 
+  STRING  : {value: 2, name: "String", stereotype: "string"},
+  BOOLEAN : {value: 3, name: "Boolean", stereotype: "boolean"},
+  DATE    : {value: 4, name: "Date", stereotype: "date"},
+  DATETIME: {value: 5, name: "DateTime", stereotype: "datetime"},
+};
+
+/** Extension */
 
 extend(MNamedElement, MElement);
+extend(MClassifier, MNamedElement);
+extend(MType, MClassifier);
+extend(MClass, MType);
+extend(MDataType, MType);
+extend(MRelationship, MClassifier);
+extend(MGeneralizationSet, MNamedElement);
+extend(MGeneralization, MNamedElement);
+extend(MAttribute, MProperty);
+extend(MProperty, MNamedElement);
+extend(MLiteral, MNamedElement);
+extend(MEndPoint, MProperty);
+
+function MElement(){ this.id = null }
+function MClassifier(){}
+function MAttribute() { this.stereotype = null }
+function MLiteral(){ this.value = '' }
+function MClass(){ this.name = "Class" }	
 function MNamedElement(){
 	this.name = ''
 	this.uniqueName = null
@@ -21,54 +44,30 @@ function MNamedElement(){
 	this.definitions = []
 	this.synonyms = [] 
 }
-
-extend(MType, MNamedElement);
 function MType() {
 	this.attributes = []
 	this.isAbtract = false	
 }
-
-extend(MClass, MType);
-function MClass(){
-	this.name = "Class"	
-	
-	this.attributes = [] //this meta-attribute should be inherited from MType but it is not
-	this.definitions = [] //this meta-attribute should be inherited from MNamedElement but it is not
-	this.synonyms = [] //this meta-attribute should be inherited from MNamedElement but it is not
-}
-
-extend(MDataType, MType);
 function MDataType(){
 	this.name = "DataType"	
-	
-	this.attributes = [] //this meta-attribute should be inherited from MType but it is not
-	this.definitions = [] //this meta-attribute should be inherited from MNamedElement but it is not
-	this.synonyms = [] //this meta-attribute should be inherited from MNamedElement but it is not
+	this.stereotype = "dataType"
+	this.literals = []	
 }
-
-extend(MGeneralizationSet, MNamedElement);
-function MGeneralizationSet() {
-	this.complete = true
-	this.disjoint = true
-	this.name = ''
-	this.generalizations = []
-}
-
-extend(MGeneralizationSet, MElement);
-function MGeneralization(){
-	this.general = null
-	this.specific = null
-	this.generalizationSet = null
-}
-
-extend(MRelationship, MNamedElement);
 function MRelationship(){
 	this.source = null
 	this.target = null
 	this.endPoints = [ new MEndPoint(), new MEndPoint() ]	
 }
-
-extend(MProperty, MNamedElement);
+function MGeneralizationSet() {
+	this.complete = true
+	this.disjoint = true	
+	this.generalizations = []
+}
+function MGeneralization(){
+	this.general = null
+	this.specific = null
+	this.generalizationSet = null
+}
 function MProperty(){	
 	this.multiplicity = "1"
 	this.dependency = false	
@@ -76,13 +75,6 @@ function MProperty(){
 	this.owner = null
 	this.derived = false
 }
-
-extend(MAttribute, MProperty);
-function MAttribute() {
-	this.stereotype = null
-}
-
-extend(MEndPoint, MProperty);
 function MEndPoint() {
 	this.classifier = null
 	this.subsets = []

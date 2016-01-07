@@ -33,24 +33,24 @@ function Pallete(){
 	
 	/** the set of shapes in this pallete */
 	this.shapes = function(){		
-		var classShape = this.createShape(joint.shapes.mcore.MClass,10,10);				
-		var dataTypeShape = this.createShape(joint.shapes.mcore.MDataType,110, 10);					
-		var genSetShape = this.createShape(joint.shapes.mcore.MGeneralizationSet,10, 60);
-		genSetShape.set('size',{width: 195, height: 20});				
-		return [classShape, dataTypeShape, genSetShape]
-	};
-	
-	/** auxiliary method to create shapes in the pallete */
-	this.createShape = function (shape_type, x, y) {
-		return new shape_type({position: { x: x  , y: y }});
+		var classShape = new joint.shapes.mcore.MClass({position: {x: 10, y: 10} });
+		
+		var dataTypeShape = new joint.shapes.mcore.MDataType({position: {x: 10, y: 60} });							
+		var enum_ = new MDataType(); enum_.stereotype = 'enumeration'; enum_.name = 'Enumeration';
+		var enumTypeShape = new joint.shapes.mcore.MDataType({position: {x: 110, y: 60}, content: enum_ });
+		
+		var genSetShape = new joint.shapes.mcore.MGeneralizationSet({position: {x: 10, y: 110} });
+		genSetShape.set('size',{width: 195, height: 20});	
+		
+		return [classShape, dataTypeShape, genSetShape, enumTypeShape]
 	};
 	
 	/** enable drag and drop on a canvas. The same pallete can enable dnd into several canvases */
 	this.enableDnd = function(canvas){
-		this.palPaper.on('cell:pointerdown', (function(cellView, evt, x, y){		
+		this.palPaper.on('cell:pointerdown', (function(cellView, evt, x, y){				
 			var fake = $("<div class='dnd'><div id='dnd'></div></div>").appendTo("body").css("left", evt.pageX-45+"px").css("top", evt.pageY-30+"px");				
 			var fakeGraph = new joint.dia.Graph;
-			var fakeShape = this.palGraph.getCell(cellView.model.get("id")).clone(); //create fake shape
+			var fakeShape = cellView.model.cloneShape(this.palGraph);			
 			fakeShape.set('position',{x:0,y:0});
 			var fakePaper = new joint.dia.Paper({
 				el: $('#dnd'),
@@ -62,11 +62,12 @@ function Pallete(){
 			$("body").mousemove(function(evt){
 				fake.css("left", (evt.pageX-45)+"px").css("top", (evt.pageY-30)+"px");
 			});
-			$("body").mouseup((function(evt) {
-				canvas.getEditor().askForAName(cellView);				
+			$("body").mouseup((function(evt) {				
 				if(evt.pageX-this.parent().width()-40 > 0){//if we are on target paper (canvas) we add the new element					
-					var realShape = this.palGraph.getCell(cellView.model.get("id")).clone(); //create real shape					
+					var realShape = cellView.model.cloneShape(this.palGraph);										
+					canvas.getEditor().renameShape(realShape);
 					canvas.getEditor().addShape(realShape,evt.pageX-this.parent().width()-40,evt.pageY-40);					
+					realShape.updateViewOn(canvas.getPaper()); 					
 					$("body").unbind("mousemove");
 					$("body").unbind("mouseup");			    	
 				}

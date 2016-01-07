@@ -1,9 +1,9 @@
 
 /** ===========================
-  * MCore - Concrete Syntax
+  * MCore 1.0 - Concrete Syntax (Shapes)
   *
-  * A shape makes reference to an instance of an element in the language's abstract syntax.
-  * The shape's attribute called 'content' is used to store that instance.
+  * A shape makes reference to a model instance 
+  * which stores the all the data about the element.
   * =========================== */
 
 joint.shapes.mcore = {};
@@ -28,26 +28,22 @@ joint.shapes.mcore.MType = joint.shapes.basic.Generic.extend({
 			'.uml-class-name-text': { 'ref': '.uml-class-name-rect', 'ref-y': .5, 'ref-x': .5, 'text-anchor': 'middle', 'y-alignment': 'middle', 'font-weight': 'plain',  'fill': 'black', 'font-size': 13, 'font-family': 'Arial' },			
             '.uml-class-attrs-text': { 'ref': '.uml-class-attrs-rect', 'ref-y': 5, 'ref-x': 5, 'fill': 'black', 'font-size': 13, 'font-family': 'Arial' },			            
 		},						
-		content: new MType(), //reference to the abstract syntax
+		content: new MType(),
     }, joint.shapes.basic.Generic.prototype.defaults),		
 	
-	//getters to the abstract syntax values
-	getName: function(){ return this.get('content').name; },	
-	getAttributes: function(){ return this.get('content').attributes; },
-	getUniqueName: function(){ return this.get('content').uniqueName; },
-	getDefinitions: function(){ return this.get('content').definitions; },
-	getSynonyms: function(){ return this.get('content').synonyms; },
-	getText: function(){ return this.get('content').text; },
-	isAbstract: function(){ return this.get('content').isAbstract; },
+	getContent: function(){ return this.get('content'); },
+	getWidth: function(){ return this.get('size').width; },	
+	getHeight: function(){ return this.get('size').height; },	
 	
-	displayName: function(){ return this.get('content').name; },
-	addAttribute: function(attr) { this.get('content').attributes.push(attr); },
-	attributeText: function(attr) {
-		return attr.name + ": "+attr.stereotype+" ["+attr.multiplicity+"]" 
-	},
+	displayName: function(){ return this.getContent().name; },
+	
+	attrText: function(attr) { return attr.name + ": "+attr.stereotype+" ["+attr.multiplicity+"]" },
+	
 	attributesText: function() {
 		var result = []
-		_.each(this.getAttributes(), (function(attr){ result.push(this.attributeText(attr)); }).bind(this));
+		_.each(this.getContent().attributes, (function(attr){
+			result.push(this.attrText(attr)); 
+		}).bind(this));
 		return result;
 	},
 			
@@ -55,9 +51,13 @@ joint.shapes.mcore.MType = joint.shapes.basic.Generic.extend({
 		joint.shapes.basic.Generic.prototype.initialize.apply(this, arguments);				
 		this.updateRectangles();
     },
-	
-	getWidth: function(){ return this.get('size').width; },	
-	getHeight: function(){ return this.get('size').height; },	
+		
+	cloneShape: function(graph){
+		var newshape = graph.getCell(this.get("id")).clone();
+		var newcontent = jQuery.extend(true, {}, this.get('content'));
+		newshape.set('content',newcontent);
+		return newshape;
+	},
 	
 	updateViewOn: function(paper){
 		var cellView = this.findView(paper);
@@ -77,8 +77,8 @@ joint.shapes.mcore.MType = joint.shapes.basic.Generic.extend({
 		this.updateRectanglesHeight(rects);			
     },
 	
-	/** Max width of the texts inside the rectangles 
-	  * i.e. max width between the name, stereotype, attributes and methods */
+	/** Max width of the texts inside each rectangle 
+	  * i.e. max width between name, stereotype, attributes and methods */
 	getTextsMaxWidth: function(rects){
 		var max = 0
 	   _.each(rects, function(rect) {
@@ -118,14 +118,15 @@ joint.shapes.mcore.MType = joint.shapes.basic.Generic.extend({
         });
 		if(this.get('size').height < offsetY) this.get('size').height = offsetY;
 	},	
+	
 });
 
 joint.shapes.mcore.MClass = joint.shapes.mcore.MType.extend({
 	
 	defaults: joint.util.deepSupplement({
         type: 'joint.shapes.mcore.MClass',
-		content: new MClass(), //reference to the abstract syntax
-    }, joint.shapes.mcore.MType.prototype.defaults),		
+		content: new MClass(), 
+    }, joint.shapes.mcore.MType.prototype.defaults),
 	
 	initialize: function(){        
         joint.shapes.mcore.MType.prototype.initialize.apply(this, arguments);		
@@ -136,16 +137,20 @@ joint.shapes.mcore.MDataType = joint.shapes.mcore.MType.extend({
 	
 	defaults: joint.util.deepSupplement({
         type: 'joint.shapes.mcore.MDataType',
-		content: new MDataType(), //reference to the abstract syntax
+		content: new MDataType(), 
     }, joint.shapes.mcore.MType.prototype.defaults),
-	
-	displayName: function(){
-		return ["\u00AB"+"dataType"+"\u00BB",this.getName()];
-	},
 	
 	initialize: function(){        
         joint.shapes.mcore.MType.prototype.initialize.apply(this, arguments);	
-    },
+    },	
+	
+	displayName: function(){		
+		if(this.getContent().stereotype !=null && this.getContent().stereotype.length > 0){
+			return ["\u00AB"+this.getContent().stereotype+"\u00BB",this.getContent().name];
+		}else{
+			return ["\u00AB"+"dataType"+"\u00BB",this.getContent().name]
+		}
+	},	
 });
 
 joint.shapes.mcore.MGeneralizationSet = joint.shapes.basic.Rect.extend({
@@ -157,31 +162,27 @@ joint.shapes.mcore.MGeneralizationSet = joint.shapes.basic.Rect.extend({
         attrs: { 						
 			rect: { fill: 'white', 'stroke-width': 0}, text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, text: '' }
 		},
-		content: new MGeneralizationSet(), //reference to the abstract syntax
+		content: new MGeneralizationSet(),
     }, joint.shapes.basic.Rect.prototype.defaults),
 	
-	//getters to the abstract syntax values
-	isDisjoint: function(){ return this.get('content').disjoint; },			
-	isComplete: function(){ return this.get('content').complete; },			
-	getName: function() { return this.get('content').name; },
-	
+	getContent: function(){ return this.get('content'); },
+				
 	metaAttributesText: function(){
 		var text = '';
-		if(this.isDisjoint() && !this.isComplete()) text = "{disjoint}";
-		if(!this.isDisjoint() && this.isComplete()) text = "{complete'}";
-		if(this.isDisjoint() && this.isComplete()) text = "{disjoint, complete}";
-		if(!this.isDisjoint() && !this.isComplete()) text = "{}";
-		if(this.getName()!=null && this.getName()!='') text = this.getName()+" "+text;
+		var isDijoint = this.getContent().disjoint;
+		var isComplete = this.getContent().complete;
+		var name = this.getContent().name;
+		if(isDijoint  && !isComplete) text = "{disjoint}";
+		if(!isDijoint &&  isComplete) text = "{complete'}";
+		if(isDijoint  &&  isComplete) text = "{disjoint, complete}";
+		if(!isDijoint && !isComplete) text = "{}";
+		if(name!=null && name!='') text = name+" "+text;
 		return text;		
 	},
 	
-	updateText: function(){ 
-		this.get('attrs').text.text = this.metaAttributesText(); 
-	},
+	updateText: function(){ this.get('attrs').text.text = this.metaAttributesText(); },
 	
-	setDefaultSize: function(){
-		this.set('size', { width: 125, height: 20 });
-	},
+	setDefaultSize: function(){ this.set('size', { width: 125, height: 20 }); },
 	
 	initialize: function() {
         joint.shapes.basic.Rect.prototype.initialize.apply(this, arguments);	
@@ -189,6 +190,13 @@ joint.shapes.mcore.MGeneralizationSet = joint.shapes.basic.Rect.extend({
 		this.setDefaultSize();
 	},
 	
+	cloneShape: function(graph){
+		var newshape = graph.getCell(this.get("id")).clone();
+		var newcontent = jQuery.extend(true, {}, this.get('content'));
+		newshape.set('content',newcontent);
+		return newshape;
+	},
+		
 	updateViewOn: function(paper){
 		var cellView = this.findView(paper);
 		if(cellView!=null){	
@@ -212,15 +220,25 @@ joint.shapes.mcore.MGeneralization = joint.dia.Link.extend({
         joint.dia.Link.prototype.initialize.apply(this, arguments);
     },
 	
-	//getters to the abstract syntax values
-	getGeneral: function(){ return this.get('content').general },
-	getSpecific: function(){ return this.get('content').specific },
-	getGeneralizationSet: function() { return this.get('content').generalzationSet },
-	
 	getGeneralizationSetShape: function(){ return this.get('gslink').get('target') },	
 	getGeneralShape: function(){ return this.get('target') },
 	getSpecificShape: function(){ return this.get('source') },	
 	
+	getGSLink: function(){ return this.get('gslink'); },
+	
+	/** create dashed link to a generalization set */
+	createGSLink: function(paper, graph){
+		var genView = this.findView(paper);
+		if(this.get('gslink')!= null && !_.isEmpty(this.get('gslink'))) graph.getCell(this.get('gslink').id).remove();
+		this.set('gslink', new joint.dia.Link({ source: midPoint(genView) }));		
+		this.get('gslink').attr('.marker-vertices', { display : 'none' });
+        this.get('gslink').attr('.marker-arrowheads', { display: 'none' });
+        this.get('gslink').attr('.connection-wrap', { display: 'none' });
+        this.get('gslink').attr('.link-tools', { display : 'none' });
+		this.get('gslink').attr('.connection', { 'stroke-dasharray': '5,5' });	
+		return this.get('gslink');
+	},	
+		
 	updateViewOn: function(paper){
 		var cellView = this.findView(paper);
 		if(cellView!=null){			
@@ -251,56 +269,37 @@ joint.shapes.mcore.MRelationship = joint.dia.Link.extend({
 		}
 	},
 		
-	//getters to the abstract syntax values
-	getName: function(){ return this.get('content').name }, 	
-	getSourceMultiplicity: function(){ return this.get('content').endPoints[0].multiplicity },	
-	getTargetMultiplicity: function(){ return this.get('content').endPoints[1].multiplicity },	
-	isSourceDependent: function(){ return this.get('content').endPoints[0].dependency }, 		
-	isTargetDependent: function(){ return this.get('content').endPoints[1].dependency }, 		
-	isSourceOrdered: function(){ return this.get('content').endPoints[0].ordered }, 		
-	isTargetOrdered: function(){ return this.get('content').endPoints[1].ordered }, 	
+	getContent: function() { return this.get('content'); },
 		
 	getSourceShape: function() { return this.get('source'); },
 	getTargetShape: function() { return this.get('target'); },
-	toOrthogonal: function(){ this.set('router', { name: 'orthogonal' }); },		
-	toManhatan: function(){ this.set('router', { name: 'manhattan' }); },	
-	toMetro: function(){ this.set('router', { name: 'metro' }); },
 		
-	getSourceDependentLabelName: function(){ return "dependent" },	
-	getTargetDependentLabelName: function(){ return "dependent" },		
-	getSourceOrderedLabelName: function(){ return "ordered" },	
-	getTargetOrderedLabelName: function(){ return "ordered" },	
-		
-	displayName: function(){
-		return this.getName();
-	},
+	displayName: function(){ return this.getContent().name; },
 	
 	srcLabelDisplayName: function(){
-		if(this.getSourceMultiplicity()!=null){
-			if(this.isSourceOrdered() && this.isSourceDependent()){
-				return this.getSourceMultiplicity() + "\n{"+this.getSourceOrderedLabelName()+",\n"+this.getSourceDependentLabelName()+"}";				
-			}else if(this.isSourceOrdered() && !this.isSourceDependent()){
-				return this.getSourceMultiplicity() + "\n{"+this.getSourceOrderedLabelName()+"}"
-			}else if(!this.isSourceOrdered() && this.isSourceDependent()){
-				return this.getSourceMultiplicity() + "\n{"+this.getSourceDependentLabelName()+"}"
-			}else if(!this.isSourceOrdered() && !this.isSourceDependent()){
-				return this.getSourceMultiplicity()
-			}
-		}
+		var sourceMultiplicity = this.getContent().endPoints[0].multiplicity;
+		var sourceDependency = this.get('content').endPoints[0].dependency;
+		var sourceOrdered = this.get('content').endPoints[0].ordered;
+		var orderedLabel = "ordered";
+		var dependencyLabel = "dependent";
+		if(sourceMultiplicity==null) return null
+		if( sourceOrdered &&  sourceDependency) return sourceMultiplicity + "\n{"+orderedLabel+",\n"+dependencyLabel+"}";				
+		if( sourceOrdered && !sourceDependency) return sourceMultiplicity + "\n{"+orderedLabel+"}";
+		if(!sourceOrdered &&  sourceDependency) return sourceMultiplicity + "\n{"+dependencyLabel+"}";
+		if(!sourceOrdered && !sourceDependency) return sourceMultiplicity
 	},
 	
 	tgtLabelDisplayName: function(){
-		if(this.getTargetMultiplicity()!=null){
-			if(this.isTargetOrdered() && this.isTargetDependent()){
-				return this.getTargetMultiplicity() + "\n{"+this.getTargetOrderedLabelName()+",\n"+this.getTargetDependentLabelName()+"}";				
-			}else if(this.isTargetOrdered() && !this.isTargetDependent()){
-				return this.getTargetMultiplicity() + "\n{"+this.getTargetOrderedLabelName()+"}"
-			}else if(!this.isTargetOrdered() && this.isTargetDependent()){
-				return this.getTargetMultiplicity() + "\n{"+this.getTargetDependentLabelName()+"}"
-			}else if(!this.isTargetOrdered() && !this.isTargetDependent()){
-				return this.getTargetMultiplicity()
-			}
-		}
+		var targetMultiplicity = this.getContent().endPoints[1].multiplicity;
+		var targetDependency = this.get('content').endPoints[1].dependency;
+		var targetOrdered = this.get('content').endPoints[1].ordered;
+		var orderedLabel = "ordered";
+		var dependencyLabel = "dependent";
+		if(targetMultiplicity==null) return null;
+		if( targetOrdered &&  targetDependency) return targetMultiplicity + "\n{"+orderedLabel+",\n"+dependencyLabel+"}";				
+		if( targetOrdered && !targetDependency) return targetMultiplicity + "\n{"+orderedLabel+"}";
+		if(!targetOrdered &&  targetDependency) return targetMultiplicity + "\n{"+dependencyLabel+"}";
+		if(!targetOrdered && !targetDependency) return targetMultiplicity
 	},
 	
 	installCenterLabel: function(){
@@ -311,6 +310,11 @@ joint.shapes.mcore.MRelationship = joint.dia.Link.extend({
             },
         });			
 	},
+	
+	installCornerLabels: function(){	
+		this.installSourceLabel();
+		this.installTargetLabel();
+	},	
 	
 	installSourceLabel: function(){
 		var offsetSrc = 0
@@ -332,10 +336,5 @@ joint.shapes.mcore.MRelationship = joint.dia.Link.extend({
 				rect: { fill: 'white' }, text: { fill: 'black', 'font-family': 'Arial', 'font-size':12, dy:-15, text: this.tgtLabelDisplayName() }
 			}
 		});	
-	},
-	
-	installCornerLabels: function(){	
-		this.installSourceLabel();
-		this.installTargetLabel();
 	},	
 });

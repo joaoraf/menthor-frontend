@@ -39,41 +39,24 @@ function Canvas(){
 			model: this.graph,		
 			width: $('#'+this.$id).parent().width()*2,
 			height: $('#'+this.$id).parent().height()*2,		
-			linkView: joint.dia.LinkView.extend({ //switch creating vertices with single click to double click
+			
+			//switch creating vertices with single click to double click
+			linkView: joint.dia.LinkView.extend({ 
 				pointerdblclick: function(evt, x, y) {
 					if (V(evt.target).hasClass('connection') || V(evt.target).hasClass('connection-wrap')) { this.addVertex({ x: x, y: y }); }
 				}
-			}),
-			interactive: function(cellView) {
-				if (cellView.model instanceof joint.dia.Link) return { vertexAdd: false };
-				return true;
-			}
+			}),			
+			interactive: function(cellView) { if (cellView.model instanceof joint.dia.Link) return { vertexAdd: false }; return true; }
 		});
 	}
 	
 	/** drag a link from a particular cellView */
 	this.dragLinkFrom = function(evt, linkShape, cellView){		
-		linkShape.set("source", {id: cellView.model.get("id")});
-		linkShape.set("target", this.getPaper().snapToGrid({x: evt.clientX, y: evt.clientY }));			
-		this.getGraph().addCell(linkShape, {validation: false});
-		var linkView = this.getPaper().findViewByModel(linkShape);
-		linkView.startArrowheadMove("target");
+		var linkView = this.getEditor().startDraggingLink(linkShape, cellView, evt);		
 		$("body").mouseup((function(evt){		
-			linkView.pointerup(evt);			
+			linkView.pointerup(evt);
 			$("body").unbind();
-			//reflect the connection in the abstract syntax level...
-			var coords = this.getPaper().snapToGrid({x: evt.clientX, y: evt.clientY });
-			var shapes = this.getGraph().findModelsFromPoint({ x:coords.x, y:coords.y });
-			if(shapes!=null && shapes.length>0) {			
-				if(linkShape instanceof joint.shapes.mcore.MGeneralization) {
-					linkShape.get('content').specific = cellView.model.get('content');
-					linkView.model.get('content').general = shapes[0].get('content');
-				}
-				if(linkShape instanceof joint.shapes.mcore.MRelationship) {
-					linkShape.get('content').source = cellView.model.get('content');
-					linkView.model.get('content').target = shapes[0].get('content');
-				}				
-			}
+			this.getEditor().endDroppingLink(linkShape, cellView, evt);
 		}).bind(this));
 		$("body").mousemove((function(evt){
 			var coords = this.getPaper().snapToGrid({x: evt.clientX, y: evt.clientY });
@@ -83,42 +66,16 @@ function Canvas(){
 	
 	/** drag and drop a dashed link between a generalization and its generalization set*/
 	this.dragGSLink = function(genView, evt){
-		var graph = this.getGraph();
-		var paper = this.getPaper();
-		if(genView.model.get('gslink')!= null && !_.isEmpty(genView.model.get('gslink'))) graph.getCell(genView.model.get('gslink').id).remove();
-		genView.model.set('gslink', new joint.dia.Link({ source: midPoint(genView) }));		
-		genView.model.get('gslink').attr('.marker-vertices', { display : 'none' });
-        genView.model.get('gslink').attr('.marker-arrowheads', { display: 'none' });
-        genView.model.get('gslink').attr('.connection-wrap', { display: 'none' });
-        genView.model.get('gslink').attr('.link-tools', { display : 'none' });
-		genView.model.get('gslink').attr('.connection', { 'stroke-dasharray': '5,5' });	
-		genView.model.get('gslink').set('target',paper.snapToGrid({x: evt.clientX, y: evt.clientY}));
-		graph.addCell(genView.model.get('gslink'), {validation: false});
-		var linkView = paper.findViewByModel(genView.model.get('gslink'));
-		linkView.startArrowheadMove("target");
+		var linkView = this.getEditor().startDraggingGSLink(genView, evt);		
 		$("body").mouseup((function(evt){		
 			linkView.pointerup(evt);
 			$("body").unbind();
-			genView.model.get('gslink').set('source',midPoint(genView));			
-			genView.model.get('gslink').attr('./display', 'none') //hide the line
-			//reflect the connection in the abstract syntax level...
-			var coords = this.getPaper().snapToGrid({x: evt.clientX, y: evt.clientY });
-			var shapes = this.getGraph().findModelsFromPoint({ x:coords.x, y:coords.y });
-			if(shapes!=null && shapes.length>0) {
-				genView.model.get('content').generalizationSet = shapes[0].get('content')
-				shapes[0].get('content').generalizations.push(genView.model.get('content'));
-			}
+			this.getEditor().endDroppingGSLink(genView, evt);			
 		}).bind(this));
-		$("body").mousemove(function(evt){
-			var coords = paper.snapToGrid({ x: evt.clientX, y: evt.clientY });
+		$("body").mousemove((function(evt){
+			var coords = this.getPaper().snapToGrid({ x: evt.clientX, y: evt.clientY });
 			linkView.pointermove(evt, coords.x, coords.y)
-		});	
-		graph.getCell(genView.model.get('source').id).on('add change:position', function(){
-			genView.model.get('gslink').set('source', midPoint(genView));
-		});
-		graph.getCell(genView.model.get('target').id).on('add change:position', function(){
-			genView.model.get('gslink').set('source', midPoint(genView));
-		});
+		}).bind(this));					
 	};
 	
 	/** show or hide all links of an element */
